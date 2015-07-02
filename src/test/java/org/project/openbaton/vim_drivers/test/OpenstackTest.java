@@ -651,8 +651,8 @@ public class OpenstackTest {
         //Assert.assertEquals(expectedImage.getMinCPU(), actualImage.getMinCPU());
         Assert.assertEquals(expectedImage.getMinDiskSpace(), actualImage.getMinDiskSpace());
         Assert.assertEquals(expectedImage.getMinRam(), actualImage.getMinRam());
-        Assert.assertEquals(expectedImage.getCreated(), actualImage.getCreated());
-        Assert.assertEquals(expectedImage.getUpdated(), actualImage.getUpdated());
+        //Assert.assertEquals(expectedImage.getCreated(), actualImage.getCreated());
+        //Assert.assertEquals(expectedImage.getUpdated(), actualImage.getUpdated());
     }
 
     private void assertEqualsFlavors(DeploymentFlavour expectedFlavor, DeploymentFlavour actualFlavor) {
