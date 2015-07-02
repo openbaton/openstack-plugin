@@ -1,7 +1,7 @@
 package org.project.openbaton.clients.interfaces.client.test;
 
-import org.project.neutrino.nfvo.catalogue.mano.common.DeploymentFlavour;
-import org.project.neutrino.nfvo.catalogue.nfvo.*;
+import org.project.openbaton.nfvo.catalogue.mano.common.DeploymentFlavour;
+import org.project.openbaton.nfvo.catalogue.nfvo.*;
 import org.project.openbaton.clients.interfaces.ClientInterfaces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -30,12 +30,12 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Matchers;
-import org.project.neutrino.nfvo.catalogue.mano.common.DeploymentFlavour;
-import org.project.neutrino.nfvo.catalogue.nfvo.*;
-import org.project.neutrino.nfvo.catalogue.nfvo.Network;
-import org.project.neutrino.nfvo.catalogue.nfvo.Quota;
-import org.project.neutrino.nfvo.catalogue.nfvo.Server;
-import org.project.neutrino.nfvo.common.exceptions.VimException;
+import org.project.openbaton.nfvo.catalogue.mano.common.DeploymentFlavour;
+import org.project.openbaton.nfvo.catalogue.nfvo.*;
+import org.project.openbaton.nfvo.catalogue.nfvo.Network;
+import org.project.openbaton.nfvo.catalogue.nfvo.Quota;
+import org.project.openbaton.nfvo.catalogue.nfvo.Server;
+import org.project.openbaton.nfvo.common.exceptions.VimException;
 import org.project.openbaton.clients.interfaces.client.openstack.OpenstackClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
@@ -65,23 +65,23 @@ public class OpenstackTest {
     @Autowired
     OpenstackClient openstackClient;
 
-    org.project.neutrino.nfvo.catalogue.nfvo.VimInstance vimInstance;
+    org.project.openbaton.nfvo.catalogue.nfvo.VimInstance vimInstance;
 
-    org.project.neutrino.nfvo.catalogue.mano.descriptor.VirtualDeploymentUnit vdu;
+    org.project.openbaton.nfvo.catalogue.mano.descriptor.VirtualDeploymentUnit vdu;
 
-    org.project.neutrino.nfvo.catalogue.mano.record.VirtualNetworkFunctionRecord vnfr;
+    org.project.openbaton.nfvo.catalogue.mano.record.VirtualNetworkFunctionRecord vnfr;
 
-    org.project.neutrino.nfvo.catalogue.nfvo.Network definedNetwork;
+    org.project.openbaton.nfvo.catalogue.nfvo.Network definedNetwork;
 
-    org.project.neutrino.nfvo.catalogue.nfvo.Subnet definedSubnet;
+    org.project.openbaton.nfvo.catalogue.nfvo.Subnet definedSubnet;
 
-    org.project.neutrino.nfvo.catalogue.nfvo.Server definedServer;
+    org.project.openbaton.nfvo.catalogue.nfvo.Server definedServer;
 
-    org.project.neutrino.nfvo.catalogue.nfvo.NFVImage definedImage;
+    org.project.openbaton.nfvo.catalogue.nfvo.NFVImage definedImage;
 
-    org.project.neutrino.nfvo.catalogue.mano.common.DeploymentFlavour definedFlavor;
+    org.project.openbaton.nfvo.catalogue.mano.common.DeploymentFlavour definedFlavor;
 
-    org.project.neutrino.nfvo.catalogue.nfvo.Quota definedQuota;
+    org.project.openbaton.nfvo.catalogue.nfvo.Quota definedQuota;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();

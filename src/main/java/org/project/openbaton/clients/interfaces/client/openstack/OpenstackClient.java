@@ -38,9 +38,9 @@ import org.jclouds.openstack.nova.v2_0.features.FlavorApi;
 import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jclouds.openstack.v2_0.domain.Resource;
-import org.project.neutrino.nfvo.catalogue.mano.common.DeploymentFlavour;
-import org.project.neutrino.nfvo.catalogue.nfvo.*;
-import org.project.neutrino.nfvo.common.exceptions.VimException;
+import org.project.openbaton.nfvo.catalogue.mano.common.DeploymentFlavour;
+import org.project.openbaton.nfvo.catalogue.nfvo.*;
+import org.project.openbaton.nfvo.common.exceptions.VimException;
 import org.project.openbaton.clients.interfaces.ClientInterfaces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -762,7 +762,7 @@ public class OpenstackClient implements ClientInterfaces {
     }
 
     public List<Subnet> listSubnets() {
-        List<Subnet> subnets = new ArrayList<org.project.neutrino.nfvo.catalogue.nfvo.Subnet>();
+        List<Subnet> subnets = new ArrayList<org.project.openbaton.nfvo.catalogue.nfvo.Subnet>();
         for (org.jclouds.openstack.neutron.v2.domain.Subnet net : this.neutronApi.getSubnetApi(defaultZone).list().concat()){
             Subnet subnet = new Subnet();
             subnet.setName(net.getName());

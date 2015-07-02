@@ -1,7 +1,7 @@
-package org.project.openbaton.clients.amazon;
+package org.project.openbaton.clients.interfaces.client.amazon;
 
-import org.project.neutrino.nfvo.catalogue.mano.common.DeploymentFlavour;
-import org.project.neutrino.nfvo.catalogue.nfvo.*;
+import org.project.openbaton.nfvo.catalogue.mano.common.DeploymentFlavour;
+import org.project.openbaton.nfvo.catalogue.nfvo.*;
 import org.project.openbaton.clients.interfaces.ClientInterfaces;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
