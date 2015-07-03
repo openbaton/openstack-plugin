@@ -677,7 +677,11 @@ public class OpenstackClient implements ClientInterfaces {
             network.setName(jcloudsNetwork.getName());
             network.setExtId(jcloudsNetwork.getId());
             network.setExternal(jcloudsNetwork.getExternal());
-            network.setNetworkType(jcloudsNetwork.getNetworkType().toString());
+            if (jcloudsNetwork.getPhysicalNetworkName() != null) {
+                network.setNetworkType(jcloudsNetwork.getNetworkType().toString());
+            } else {
+                network.setNetworkType(null);
+            }
             network.setShared(jcloudsNetwork.getShared());
             //network.setSubnets(jcloudsNetwork.getSubnets());
             if (jcloudsNetwork.getPhysicalNetworkName() != null) {
