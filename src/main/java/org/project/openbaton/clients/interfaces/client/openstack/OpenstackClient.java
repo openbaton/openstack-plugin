@@ -555,7 +555,7 @@ public class OpenstackClient implements ClientInterfaces {
     }
 
     public Network createNetwork(Network network) {
-        Network createdNetwork = createNetwork(network.getName(), network.getNetworkType(), network.getExternal(), network.getShared(), network.getSegmentationId(), network.getPhysicalNetworkName());
+        Network createdNetwork = createNetwork(network.getName(), network.getExternal(), network.getShared());
         network.setName(createdNetwork.getName());
         network.setExtId(createdNetwork.getExtId());
         network.setExternal(createdNetwork.getExternal());
@@ -563,7 +563,7 @@ public class OpenstackClient implements ClientInterfaces {
         return network;
     }
 
-    public Network createNetwork(String name, String networkType, boolean external, boolean shared, int segmentationId, String physicalNetworkName ) {
+    public Network createNetwork(String name, boolean external, boolean shared) {
         NetworkApi networkApi = neutronApi.getNetworkApi(defaultZone);
         //CreateNetwork createNetwork = CreateNetwork.createBuilder(name).networkType(NetworkType.fromValue(networkType)).external(external).shared(shared).segmentationId(segmentationId).physicalNetworkName(physicalNetworkName).build();
         CreateNetwork createNetwork = CreateNetwork.createBuilder(name).external(external).shared(shared).build();
@@ -621,19 +621,6 @@ public class OpenstackClient implements ClientInterfaces {
             network.setExtId(jcloudsNetwork.getId());
             network.setExternal(jcloudsNetwork.getExternal());
             network.setShared(jcloudsNetwork.getShared());
-            if (jcloudsNetwork.getPhysicalNetworkName() != null)
-                network.setNetworkType(jcloudsNetwork.getNetworkType().toString());
-            else
-                network.setNetworkType("not provided");
-            //network.setSubnets(jcloudsNetwork.getSubnets());
-            if (jcloudsNetwork.getPhysicalNetworkName() != null)
-                network.setPhysicalNetworkName(jcloudsNetwork.getPhysicalNetworkName());
-            else
-                network.setPhysicalNetworkName("not provided");
-            if (jcloudsNetwork.getSegmentationId() != null)
-                network.setSegmentationId(jcloudsNetwork.getSegmentationId());
-            else
-                network.setSegmentationId(-1);
             return network;
         } catch (Exception e) {
             throw new NullPointerException("Network not found");

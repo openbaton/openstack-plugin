@@ -260,10 +260,7 @@ public class OpenstackTest {
         when(network.getName()).thenReturn(definedNetwork.getName());
         when(network.getId()).thenReturn(definedNetwork.getExtId());
         when(network.getExternal()).thenReturn(definedNetwork.getExternal());
-        when(network.getNetworkType()).thenReturn(NetworkType.fromValue(definedNetwork.getNetworkType()));
         when(network.getShared()).thenReturn(definedNetwork.getShared());
-        when(network.getPhysicalNetworkName()).thenReturn(definedNetwork.getPhysicalNetworkName());
-        when(network.getSegmentationId()).thenReturn(definedNetwork.getSegmentationId());
         when(network.getSubnets()).thenReturn(ImmutableSet.<String>of(definedSubnet.getExtId()));
 
         //SubnetApi
@@ -608,11 +605,8 @@ public class OpenstackTest {
         Network network = new Network();
         network.setName("mocked_network_name");
         network.setExtId("mocked_network_ext_id");
-        network.setNetworkType("VLAN");
         network.setExternal(false);
         network.setShared(false);
-        network.setSegmentationId(4000);
-        network.setPhysicalNetworkName("invlan");
         return network;
     }
 
@@ -662,12 +656,9 @@ public class OpenstackTest {
 
     private void assertEqualsNetworks(Network expectedNetwork, Network actualNetwork) {
         Assert.assertEquals(expectedNetwork.getName(), actualNetwork.getName());
-        Assert.assertEquals(expectedNetwork.getNetworkType().toLowerCase(), actualNetwork.getNetworkType().toLowerCase());
         Assert.assertEquals(expectedNetwork.getExternal(), actualNetwork.getExternal());
         Assert.assertEquals(expectedNetwork.getShared(), actualNetwork.getShared());
         Assert.assertEquals(expectedNetwork.getSubnets(), actualNetwork.getSubnets());
-        Assert.assertEquals(expectedNetwork.getPhysicalNetworkName(), actualNetwork.getPhysicalNetworkName());
-        Assert.assertEquals(expectedNetwork.getSegmentationId(), actualNetwork.getSegmentationId());
     }
 
     private void assertEqualsSubnets(Subnet expectedSubnet, Subnet actualSubnet) {
