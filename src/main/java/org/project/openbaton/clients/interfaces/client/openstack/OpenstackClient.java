@@ -559,26 +559,20 @@ public class OpenstackClient implements ClientInterfaces {
         network.setName(createdNetwork.getName());
         network.setExtId(createdNetwork.getExtId());
         network.setExternal(createdNetwork.getExternal());
-        network.setNetworkType(createdNetwork.getNetworkType());
         network.setShared(createdNetwork.getShared());
-        network.setPhysicalNetworkName(createdNetwork.getPhysicalNetworkName());
-        network.setSegmentationId(createdNetwork.getSegmentationId());
         return network;
     }
 
     public Network createNetwork(String name, String networkType, boolean external, boolean shared, int segmentationId, String physicalNetworkName ) {
         NetworkApi networkApi = neutronApi.getNetworkApi(defaultZone);
-        CreateNetwork createNetwork = CreateNetwork.createBuilder(name).networkType(NetworkType.fromValue(networkType)).external(external).shared(shared).segmentationId(segmentationId).physicalNetworkName(physicalNetworkName).build();
-        //CreateNetwork createNetwork = CreateNetwork.createBuilder(name).external(external).shared(shared).build();
+        //CreateNetwork createNetwork = CreateNetwork.createBuilder(name).networkType(NetworkType.fromValue(networkType)).external(external).shared(shared).segmentationId(segmentationId).physicalNetworkName(physicalNetworkName).build();
+        CreateNetwork createNetwork = CreateNetwork.createBuilder(name).external(external).shared(shared).build();
         org.jclouds.openstack.neutron.v2.domain.Network jcloudsNetwork = networkApi.create(createNetwork);
         Network network = new Network();
         network.setName(jcloudsNetwork.getName());
         network.setExtId(jcloudsNetwork.getId());
         network.setExternal(jcloudsNetwork.getExternal());
-        network.setNetworkType(jcloudsNetwork.getNetworkType().toString());
         network.setShared(jcloudsNetwork.getShared());
-        network.setPhysicalNetworkName(jcloudsNetwork.getPhysicalNetworkName());
-        network.setSegmentationId(jcloudsNetwork.getSegmentationId());
         return network;
     }
 
@@ -587,10 +581,7 @@ public class OpenstackClient implements ClientInterfaces {
         network.setName(updatedNetwork.getName());
         network.setExtId(updatedNetwork.getExtId());
         network.setExternal(updatedNetwork.getExternal());
-        network.setNetworkType(updatedNetwork.getNetworkType());
         network.setShared(updatedNetwork.getShared());
-        network.setPhysicalNetworkName(updatedNetwork.getPhysicalNetworkName());
-        network.setSegmentationId(updatedNetwork.getSegmentationId());
         return network;
     }
 
@@ -598,16 +589,14 @@ public class OpenstackClient implements ClientInterfaces {
         NetworkApi networkApi = neutronApi.getNetworkApi(defaultZone);
         //Plugin does not support updating provider attributes. -> NetworkType, SegmentationId, physicalNetworkName
         //UpdateNetwork updateNetwork = UpdateNetwork.updateBuilder().name(name).networkType(NetworkType.fromValue(networkType)).external(external).shared(shared).segmentationId(segmentationId).physicalNetworkName(physicalNetworkName).build();
-        UpdateNetwork updateNetwork = UpdateNetwork.updateBuilder().name(name).external(external).shared(shared).build();
+        //UpdateNetwork updateNetwork = UpdateNetwork.updateBuilder().name(name).external(external).shared(shared).build();
+        UpdateNetwork updateNetwork = UpdateNetwork.updateBuilder().name(name).build();
         org.jclouds.openstack.neutron.v2.domain.Network jcloudsNetwork = networkApi.update(extId, updateNetwork);
         Network network = new Network();
         network.setName(jcloudsNetwork.getName());
         network.setExtId(jcloudsNetwork.getId());
         network.setExternal(jcloudsNetwork.getExternal());
-        network.setNetworkType(jcloudsNetwork.getNetworkType().toString());
         network.setShared(jcloudsNetwork.getShared());
-        network.setPhysicalNetworkName(jcloudsNetwork.getPhysicalNetworkName());
-        network.setSegmentationId(jcloudsNetwork.getSegmentationId());
         return network;
     }
 
@@ -631,16 +620,20 @@ public class OpenstackClient implements ClientInterfaces {
             network.setName(jcloudsNetwork.getName());
             network.setExtId(jcloudsNetwork.getId());
             network.setExternal(jcloudsNetwork.getExternal());
-            network.setNetworkType(jcloudsNetwork.getNetworkType().toString());
             network.setShared(jcloudsNetwork.getShared());
+            if (jcloudsNetwork.getPhysicalNetworkName() != null)
+                network.setNetworkType(jcloudsNetwork.getNetworkType().toString());
+            else
+                network.setNetworkType("not provided");
             //network.setSubnets(jcloudsNetwork.getSubnets());
-            if (jcloudsNetwork.getPhysicalNetworkName() != null) {
+            if (jcloudsNetwork.getPhysicalNetworkName() != null)
                 network.setPhysicalNetworkName(jcloudsNetwork.getPhysicalNetworkName());
-            } else {
-                network.setPhysicalNetworkName("-");
-            }
+            else
+                network.setPhysicalNetworkName("not provided");
             if (jcloudsNetwork.getSegmentationId() != null)
                 network.setSegmentationId(jcloudsNetwork.getSegmentationId());
+            else
+                network.setSegmentationId(-1);
             return network;
         } catch (Exception e) {
             throw new NullPointerException("Network not found");
@@ -677,20 +670,7 @@ public class OpenstackClient implements ClientInterfaces {
             network.setName(jcloudsNetwork.getName());
             network.setExtId(jcloudsNetwork.getId());
             network.setExternal(jcloudsNetwork.getExternal());
-            if (jcloudsNetwork.getPhysicalNetworkName() != null) {
-                network.setNetworkType(jcloudsNetwork.getNetworkType().toString());
-            } else {
-                network.setNetworkType(null);
-            }
             network.setShared(jcloudsNetwork.getShared());
-            //network.setSubnets(jcloudsNetwork.getSubnets());
-            if (jcloudsNetwork.getPhysicalNetworkName() != null) {
-                network.setPhysicalNetworkName(jcloudsNetwork.getPhysicalNetworkName());
-            } else {
-                network.setPhysicalNetworkName("-");
-            }
-            if (jcloudsNetwork.getSegmentationId() != null)
-                network.setSegmentationId(jcloudsNetwork.getSegmentationId());
             networks.add(network);
         }
         return networks;
