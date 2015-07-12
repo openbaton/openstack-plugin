@@ -21,7 +21,6 @@ import org.jclouds.openstack.keystone.v2_0.config.KeystoneProperties;
 import org.jclouds.openstack.neutron.v2.NeutronApi;
 import org.jclouds.openstack.neutron.v2.domain.Network.CreateNetwork;
 import org.jclouds.openstack.neutron.v2.domain.Network.UpdateNetwork;
-import org.jclouds.openstack.neutron.v2.domain.NetworkType;
 import org.jclouds.openstack.neutron.v2.domain.Subnet.CreateSubnet;
 import org.jclouds.openstack.neutron.v2.domain.Subnet.UpdateSubnet;
 import org.jclouds.openstack.neutron.v2.features.NetworkApi;
@@ -38,10 +37,10 @@ import org.jclouds.openstack.nova.v2_0.features.FlavorApi;
 import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jclouds.openstack.v2_0.domain.Resource;
+import org.project.openbaton.clients.interfaces.ClientInterfaces;
 import org.project.openbaton.nfvo.catalogue.mano.common.DeploymentFlavour;
 import org.project.openbaton.nfvo.catalogue.nfvo.*;
 import org.project.openbaton.nfvo.common.exceptions.VimException;
-import org.project.openbaton.clients.interfaces.ClientInterfaces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -555,11 +554,11 @@ public class OpenstackClient implements ClientInterfaces {
     }
 
     public Network createNetwork(Network network) {
-        Network createdNetwork = createNetwork(network.getName(), network.getExternal(), network.getShared());
+        Network createdNetwork = createNetwork(network.getName(), network.isExternal(), network.isShared());
         network.setName(createdNetwork.getName());
         network.setExtId(createdNetwork.getExtId());
-        network.setExternal(createdNetwork.getExternal());
-        network.setShared(createdNetwork.getShared());
+        network.setExternal(createdNetwork.isExternal());
+        network.setShared(createdNetwork.isShared());
         return network;
     }
 
@@ -577,11 +576,11 @@ public class OpenstackClient implements ClientInterfaces {
     }
 
     public Network updateNetwork(Network network) {
-        Network updatedNetwork = updateNetwork(network.getExtId(), network.getName(), network.getExternal(), network.getShared());
+        Network updatedNetwork = updateNetwork(network.getExtId(), network.getName(), network.isExternal(), network.isShared());
         network.setName(updatedNetwork.getName());
         network.setExtId(updatedNetwork.getExtId());
-        network.setExternal(updatedNetwork.getExternal());
-        network.setShared(updatedNetwork.getShared());
+        network.setExternal(updatedNetwork.isExternal());
+        network.setShared(updatedNetwork.isShared());
         return network;
     }
 
