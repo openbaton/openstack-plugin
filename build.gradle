@@ -1,5 +1,6 @@
 dependencies {
     compile project(":clients-int")
+    compile 'org.project.openbaton:catalogue:0.5-SNAPSHOT'
 
     compile ('org.apache.jclouds.driver:jclouds-slf4j:1.9.0')
     compile ('org.apache.jclouds.driver:jclouds-sshj:1.9.0')

@@ -37,14 +37,19 @@ import org.jclouds.openstack.nova.v2_0.features.FlavorApi;
 import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jclouds.openstack.v2_0.domain.Resource;
+import org.project.openbaton.clients.exceptions.VimDriverException;
 import org.project.openbaton.clients.interfaces.ClientInterfaces;
-import org.project.openbaton.nfvo.catalogue.mano.common.DeploymentFlavour;
-import org.project.openbaton.nfvo.catalogue.nfvo.*;
-import org.project.openbaton.nfvo.common.exceptions.VimException;
+import org.project.openbaton.common.catalogue.mano.common.DeploymentFlavour;
+import org.project.openbaton.common.catalogue.nfvo.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+import org.project.openbaton.common.catalogue.nfvo.VimInstance;
+import org.project.openbaton.common.catalogue.nfvo.NFVImage;
+import org.project.openbaton.common.catalogue.nfvo.Quota;
+import org.project.openbaton.common.catalogue.nfvo.Subnet;
+import org.project.openbaton.common.catalogue.nfvo.Network;
 
 import java.io.*;
 import java.util.*;
@@ -141,7 +146,7 @@ public class OpenstackClient implements ClientInterfaces {
 
     public Server launchInstanceAndWait(String name, String imageId, String flavorId,
                                   String keypair, List<String> network, List<String> secGroup,
-                                  String userData) throws VimException {
+                                  String userData) throws VimDriverException {
         boolean bootCompleted = false;
         Server server = launchInstance(name, imageId, flavorId, keypair, network, secGroup, userData);
         while (bootCompleted==false) {
@@ -155,7 +160,7 @@ public class OpenstackClient implements ClientInterfaces {
                 bootCompleted = true;
             }
             if (server.getStatus().equals("ERROR")){
-                throw new VimException(server.getExtendedStatus());
+                throw new VimDriverException(server.getExtendedStatus());
             }
         }
         return server;
@@ -446,7 +451,7 @@ public class OpenstackClient implements ClientInterfaces {
         return flavor;
     }
 
-    public DeploymentFlavour updateFlavor(DeploymentFlavour flavor) throws VimException {
+    public DeploymentFlavour updateFlavor(DeploymentFlavour flavor) throws VimDriverException {
         try {
             DeploymentFlavour updatedFlavor = updateFlavor(flavor.getExtId(), flavor.getFlavour_key(), flavor.getVcpus(), flavor.getRam(), flavor.getDisk());
             flavor.setFlavour_key(updatedFlavor.getFlavour_key());
@@ -455,12 +460,12 @@ public class OpenstackClient implements ClientInterfaces {
             flavor.setDisk(updatedFlavor.getDisk());
             flavor.setVcpus(updatedFlavor.getVcpus());
             return flavor;
-        } catch (VimException e) {
-            throw new VimException("Image with id: " + flavor.getId() + " not updated successfully");
+        } catch (VimDriverException e) {
+            throw new VimDriverException("Image with id: " + flavor.getId() + " not updated successfully");
             }
     }
 
-    public DeploymentFlavour updateFlavor(String extId, String name, int vcpus, int ram, int disk) throws VimException {
+    public DeploymentFlavour updateFlavor(String extId, String name, int vcpus, int ram, int disk) throws VimDriverException {
         FlavorApi flavorApi = this.novaApi.getFlavorApi(this.defaultZone);
         boolean isDeleted = deleteFlavor(extId);
         if (isDeleted) {
@@ -474,7 +479,7 @@ public class OpenstackClient implements ClientInterfaces {
             updatedFlavor.setDisk(jcloudsFlavor.getVcpus());
             return updatedFlavor;
         } else {
-            throw new VimException("Image with extId: " + extId + " not updated successfully");
+            throw new VimDriverException("Image with extId: " + extId + " not updated successfully");
         }
     }
 
@@ -732,7 +737,7 @@ public class OpenstackClient implements ClientInterfaces {
     }
 
     public List<Subnet> listSubnets() {
-        List<Subnet> subnets = new ArrayList<org.project.openbaton.nfvo.catalogue.nfvo.Subnet>();
+        List<Subnet> subnets = new ArrayList<org.project.openbaton.common.catalogue.nfvo.Subnet>();
         for (org.jclouds.openstack.neutron.v2.domain.Subnet net : this.neutronApi.getSubnetApi(defaultZone).list().concat()){
             Subnet subnet = new Subnet();
             subnet.setName(net.getName());
