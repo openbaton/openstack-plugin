@@ -30,12 +30,15 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Matchers;
-import org.project.openbaton.nfvo.catalogue.mano.common.DeploymentFlavour;
-import org.project.openbaton.nfvo.catalogue.nfvo.*;
-import org.project.openbaton.nfvo.catalogue.nfvo.Network;
-import org.project.openbaton.nfvo.catalogue.nfvo.Quota;
-import org.project.openbaton.nfvo.catalogue.nfvo.Server;
-import org.project.openbaton.nfvo.common.exceptions.VimException;
+import org.project.openbaton.catalogue.mano.common.DeploymentFlavour;
+import org.project.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
+import org.project.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
+import org.project.openbaton.catalogue.nfvo.*;
+import org.project.openbaton.catalogue.nfvo.Network;
+import org.project.openbaton.catalogue.nfvo.Quota;
+import org.project.openbaton.catalogue.nfvo.Server;
+
+import org.project.openbaton.clients.exceptions.VimDriverException;
 import org.project.openbaton.clients.interfaces.client.openstack.OpenstackClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
@@ -57,48 +60,48 @@ import static org.mockito.Mockito.when;
  * Created by mpa on 07.05.15.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@TestExecutionListeners( {DependencyInjectionTestExecutionListener.class} )
+@TestExecutionListeners({DependencyInjectionTestExecutionListener.class})
 @ContextConfiguration(classes = {ApplicationTest.class})
-@TestPropertySource(properties = { "timezone = GMT", "port: 4242" })
+@TestPropertySource(properties = {"timezone = GMT", "port: 4242"})
 public class OpenstackTest {
 
     @Autowired
     OpenstackClient openstackClient;
 
-    org.project.openbaton.nfvo.catalogue.nfvo.VimInstance vimInstance;
+    VimInstance vimInstance;
 
-    org.project.openbaton.nfvo.catalogue.mano.descriptor.VirtualDeploymentUnit vdu;
+    VirtualDeploymentUnit vdu;
 
-    org.project.openbaton.nfvo.catalogue.mano.record.VirtualNetworkFunctionRecord vnfr;
+    VirtualNetworkFunctionRecord vnfr;
 
-    org.project.openbaton.nfvo.catalogue.nfvo.Network definedNetwork;
+    Network definedNetwork;
 
-    org.project.openbaton.nfvo.catalogue.nfvo.Subnet definedSubnet;
+    Subnet definedSubnet;
 
-    org.project.openbaton.nfvo.catalogue.nfvo.Server definedServer;
+    Server definedServer;
 
-    org.project.openbaton.nfvo.catalogue.nfvo.NFVImage definedImage;
+    NFVImage definedImage;
 
-    org.project.openbaton.nfvo.catalogue.mano.common.DeploymentFlavour definedFlavor;
+    DeploymentFlavour definedFlavor;
 
-    org.project.openbaton.nfvo.catalogue.nfvo.Quota definedQuota;
+    Quota definedQuota;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private class MyExtendedStatus extends ServerExtendedStatus{
+    private class MyExtendedStatus extends ServerExtendedStatus {
         protected MyExtendedStatus(String taskState, String vmState, int powerState) {
             super(taskState, vmState, powerState);
         }
     }
 
-    private class MyResource extends Resource{
+    private class MyResource extends Resource {
         protected MyResource(String id, String name, Set<Link> links) {
             super(id, name, links);
         }
     }
 
-    private class MyServer extends org.jclouds.openstack.nova.v2_0.domain.Server{
+    private class MyServer extends org.jclouds.openstack.nova.v2_0.domain.Server {
         protected MyServer(String id, String name, Set<Link> links, String uuid, String tenantId, String userId, Date updated, Date created, String hostId, String accessIPv4, String accessIPv6, Status status, Resource image, Resource flavor, String keyName, String configDrive, Multimap<String, Address> addresses, Map<String, String> metadata, ServerExtendedStatus extendedStatus, ServerExtendedAttributes extendedAttributes, String diskConfig, String availabilityZone) {
             super(id, name, links, uuid, tenantId, userId, updated, created, hostId, accessIPv4, accessIPv6, status, image, flavor, keyName, configDrive, addresses, metadata, extendedStatus, extendedAttributes, diskConfig, availabilityZone);
         }
@@ -173,7 +176,7 @@ public class OpenstackTest {
         openstackClient.setGlanceApi(glanceApi);
 
         //Resources
-        expFlavorResource = new MyResource(definedFlavor.getExtId(),definedFlavor.getFlavour_key(), new HashSet<Link>());
+        expFlavorResource = new MyResource(definedFlavor.getExtId(), definedFlavor.getFlavour_key(), new HashSet<Link>());
         List<Resource> resFlavorArray = new ArrayList<Resource>();
         resFlavorArray.add(expFlavorResource);
         FluentIterable<Resource> resFlavorFI = FluentIterable.from(resFlavorArray);
@@ -193,7 +196,7 @@ public class OpenstackTest {
         //Image
         expImage = new MyNovaImage(definedImage.getExtId(), definedImage.getName(), new HashSet<Link>(), new Date(), new Date(), "", "", Image.Status.ACTIVE, 1, (int) definedImage.getMinDiskSpace(), (int) definedImage.getMinRam(), new ArrayList<BlockDeviceMapping>(), expImageResource, new HashMap<String, String>());
         //Server and Resources
-        ServerExtendedStatus extStatus = new MyExtendedStatus("mocked_id","mocked_name",0);
+        ServerExtendedStatus extStatus = new MyExtendedStatus("mocked_id", "mocked_name", 0);
         expServer = new MyServer(definedServer.getExtId(), definedServer.getName(), new HashSet<Link>(), definedServer.getExtId(), "", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.fromValue(definedServer.getStatus()), expImage, expFlavor, "", "", mock(Multimap.class), new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
         ServerCreated serverCreated = mock(ServerCreated.class);
 
@@ -259,8 +262,8 @@ public class OpenstackTest {
         when(networkApi.get(definedNetwork.getExtId())).thenReturn(network);
         when(network.getName()).thenReturn(definedNetwork.getName());
         when(network.getId()).thenReturn(definedNetwork.getExtId());
-        when(network.getExternal()).thenReturn(definedNetwork.getExternal());
-        when(network.getShared()).thenReturn(definedNetwork.getShared());
+//        when(network.getExternal()).thenReturn(definedNetwork.getExternal());
+//        when(network.getShared()).thenReturn(definedNetwork.getShared());
         when(network.getSubnets()).thenReturn(ImmutableSet.<String>of(definedSubnet.getExtId()));
 
         //SubnetApi
@@ -290,13 +293,13 @@ public class OpenstackTest {
     }
 
     @Test
-    public void testLauchInstance(){
+    public void testLauchInstance() {
         Server server = openstackClient.launchInstance(definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new ArrayList<String>(), new ArrayList<String>(), "#userdata");
         assertEqualsServers(definedServer, server);
     }
 
     @Test
-    public void testLauchInstanceAndWait() throws VimException{
+    public void testLauchInstanceAndWait() throws VimDriverException {
         Server server = openstackClient.launchInstanceAndWait(definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new ArrayList<String>(), new ArrayList<String>(), "#userdata");
         assertEqualsServers(definedServer, server);
     }
@@ -388,10 +391,10 @@ public class OpenstackTest {
     }
 
     @Test
-    public void testUpdateFlavor() throws VimException{
+    public void testUpdateFlavor() throws VimDriverException {
         DeploymentFlavour flavor = openstackClient.updateFlavor(definedFlavor);
         assertEqualsFlavors(definedFlavor, flavor);
-        exception.expect(VimException.class);
+        exception.expect(VimDriverException.class);
         openstackClient.updateFlavor(new DeploymentFlavour());
     }
 
@@ -549,12 +552,12 @@ public class OpenstackTest {
         VimInstance vimInstance = new VimInstance();
         vimInstance.setName("mock_vim_instance");
         vimInstance.setTenant("mocked_tenant");
-        vimInstance.setImages(new ArrayList<NFVImage>() {{
-            NFVImage nfvImage = new NFVImage();
-            nfvImage.setName("mocked_image_name");
-            nfvImage.setExtId("mocked_image_extId");
-            add(nfvImage);
-        }});
+//        vimInstance.setImages(new ArrayList<NFVImage>() {{
+//            NFVImage nfvImage = new NFVImage();
+//            nfvImage.setName("mocked_image_name");
+//            nfvImage.setExtId("mocked_image_extId");
+//            add(nfvImage);
+//        }});
         return vimInstance;
     }
 
@@ -601,7 +604,7 @@ public class OpenstackTest {
         return server;
     }
 
-    private Network createNetwork(){
+    private Network createNetwork() {
         Network network = new Network();
         network.setName("mocked_network_name");
         network.setExtId("mocked_network_ext_id");
@@ -610,7 +613,7 @@ public class OpenstackTest {
         return network;
     }
 
-    private Subnet createSubnet(){
+    private Subnet createSubnet() {
         Subnet subnet = new Subnet();
         subnet.setName("mocked_subnet_name");
         subnet.setExtId("mocked_subnet_ext_id");
@@ -656,8 +659,8 @@ public class OpenstackTest {
 
     private void assertEqualsNetworks(Network expectedNetwork, Network actualNetwork) {
         Assert.assertEquals(expectedNetwork.getName(), actualNetwork.getName());
-        Assert.assertEquals(expectedNetwork.getExternal(), actualNetwork.getExternal());
-        Assert.assertEquals(expectedNetwork.getShared(), actualNetwork.getShared());
+//        Assert.assertEquals(expectedNetwork.getExternal(), actualNetwork.getExternal());
+//        Assert.assertEquals(expectedNetwork.getShared(), actualNetwork.getShared());
         Assert.assertEquals(expectedNetwork.getSubnets(), actualNetwork.getSubnets());
     }
 

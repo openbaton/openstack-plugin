@@ -39,17 +39,17 @@ import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jclouds.openstack.v2_0.domain.Resource;
 import org.project.openbaton.clients.exceptions.VimDriverException;
 import org.project.openbaton.clients.interfaces.ClientInterfaces;
-import org.project.openbaton.common.catalogue.mano.common.DeploymentFlavour;
-import org.project.openbaton.common.catalogue.nfvo.*;
+import org.project.openbaton.catalogue.mano.common.DeploymentFlavour;
+import org.project.openbaton.catalogue.nfvo.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
-import org.project.openbaton.common.catalogue.nfvo.VimInstance;
-import org.project.openbaton.common.catalogue.nfvo.NFVImage;
-import org.project.openbaton.common.catalogue.nfvo.Quota;
-import org.project.openbaton.common.catalogue.nfvo.Subnet;
-import org.project.openbaton.common.catalogue.nfvo.Network;
+import org.project.openbaton.catalogue.nfvo.VimInstance;
+import org.project.openbaton.catalogue.nfvo.NFVImage;
+import org.project.openbaton.catalogue.nfvo.Quota;
+import org.project.openbaton.catalogue.nfvo.Subnet;
+import org.project.openbaton.catalogue.nfvo.Network;
 
 import java.io.*;
 import java.util.*;
@@ -737,7 +737,7 @@ public class OpenstackClient implements ClientInterfaces {
     }
 
     public List<Subnet> listSubnets() {
-        List<Subnet> subnets = new ArrayList<org.project.openbaton.common.catalogue.nfvo.Subnet>();
+        List<Subnet> subnets = new ArrayList<Subnet>();
         for (org.jclouds.openstack.neutron.v2.domain.Subnet net : this.neutronApi.getSubnetApi(defaultZone).list().concat()){
             Subnet subnet = new Subnet();
             subnet.setName(net.getName());
