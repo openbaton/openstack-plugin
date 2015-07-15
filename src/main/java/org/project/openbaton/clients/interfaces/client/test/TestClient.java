@@ -1,7 +1,6 @@
 package org.project.openbaton.clients.interfaces.client.test;
 
 import org.project.openbaton.catalogue.mano.common.DeploymentFlavour;
-
 import org.project.openbaton.catalogue.nfvo.*;
 import org.project.openbaton.clients.interfaces.ClientInterfaces;
 import org.slf4j.Logger;
@@ -12,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by lto on 12/05/15.
@@ -23,7 +23,7 @@ public class TestClient implements ClientInterfaces {
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Override
-    public Server launchInstance(String name, String image, String flavor, String keypair, List<String> network, List<String> secGroup, String userData) {
+    public Server launchInstance(String name, String image, String flavor, String keypair, Set<String> network, Set<String> secGroup, String userData) {
         throw new UnsupportedOperationException();
     }
 
@@ -89,7 +89,7 @@ public class TestClient implements ClientInterfaces {
     }
 
     @Override
-    public Server launchInstanceAndWait(String hostname, String image, String extId, String keyPair, List<String> networks, List<String> securityGroups, String s) {
+    public Server launchInstanceAndWait(String hostname, String image, String extId, String keyPair, Set<String> networks, Set<String> securityGroups, String s) {
         try {
             Thread.sleep((long) (Math.random() * 3500));
         } catch (InterruptedException e) {

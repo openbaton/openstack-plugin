@@ -37,19 +37,14 @@ import org.jclouds.openstack.nova.v2_0.features.FlavorApi;
 import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jclouds.openstack.v2_0.domain.Resource;
-import org.project.openbaton.clients.exceptions.VimDriverException;
-import org.project.openbaton.clients.interfaces.ClientInterfaces;
 import org.project.openbaton.catalogue.mano.common.DeploymentFlavour;
 import org.project.openbaton.catalogue.nfvo.*;
+import org.project.openbaton.clients.exceptions.VimDriverException;
+import org.project.openbaton.clients.interfaces.ClientInterfaces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
-import org.project.openbaton.catalogue.nfvo.VimInstance;
-import org.project.openbaton.catalogue.nfvo.NFVImage;
-import org.project.openbaton.catalogue.nfvo.Quota;
-import org.project.openbaton.catalogue.nfvo.Subnet;
-import org.project.openbaton.catalogue.nfvo.Network;
 
 import java.io.*;
 import java.util.*;
@@ -135,7 +130,7 @@ public class OpenstackClient implements ClientInterfaces {
     }
 
     public Server launchInstance(String name, String imageId, String flavorId,
-                                  String keypair, List<String> network, List<String> secGroup,
+                                  String keypair, Set<String> network, Set<String> secGroup,
                                   String userData) {
         ServerApi serverApi = this.novaApi.getServerApi(defaultZone);
         CreateServerOptions options = CreateServerOptions.Builder.keyPairName(keypair).networks(network).securityGroupNames(secGroup).userData(userData.getBytes());
@@ -145,7 +140,7 @@ public class OpenstackClient implements ClientInterfaces {
     }
 
     public Server launchInstanceAndWait(String name, String imageId, String flavorId,
-                                  String keypair, List<String> network, List<String> secGroup,
+                                  String keypair, Set<String> network, Set<String> secGroup,
                                   String userData) throws VimDriverException {
         boolean bootCompleted = false;
         Server server = launchInstance(name, imageId, flavorId, keypair, network, secGroup, userData);

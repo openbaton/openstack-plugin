@@ -294,13 +294,13 @@ public class OpenstackTest {
 
     @Test
     public void testLauchInstance() {
-        Server server = openstackClient.launchInstance(definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new ArrayList<String>(), new ArrayList<String>(), "#userdata");
+        Server server = openstackClient.launchInstance(definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata");
         assertEqualsServers(definedServer, server);
     }
 
     @Test
     public void testLauchInstanceAndWait() throws VimDriverException {
-        Server server = openstackClient.launchInstanceAndWait(definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new ArrayList<String>(), new ArrayList<String>(), "#userdata");
+        Server server = openstackClient.launchInstanceAndWait(definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata");
         assertEqualsServers(definedServer, server);
     }
 

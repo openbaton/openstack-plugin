@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by lto on 12/05/15.
@@ -16,7 +17,7 @@ import java.util.List;
 @Scope
 public class AmazonClient implements ClientInterfaces {
     @Override
-    public Server launchInstance(String name, String image, String flavor, String keypair, List<String> network, List<String> secGroup, String userData) {
+    public Server launchInstance(String name, String image, String flavor, String keypair, Set<String> network, Set<String> secGroup, String userData) {
         throw new UnsupportedOperationException();
     }
 
@@ -46,7 +47,7 @@ public class AmazonClient implements ClientInterfaces {
     }
 
     @Override
-    public Server launchInstanceAndWait(String hostname, String image, String extId, String keyPair, List<String> networks, List<String> securityGroups, String s) {
+    public Server launchInstanceAndWait(String hostname, String image, String extId, String keyPair, Set<String> networks, Set<String> securityGroups, String s) {
         throw new UnsupportedOperationException();
     }
 
