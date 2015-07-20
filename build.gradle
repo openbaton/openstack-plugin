@@ -13,6 +13,14 @@ apply from: 'openbaton-libs/gradle/gradle/command.line.helper.gradle'
 apply from: 'openbaton-libs/gradle/gradle/git.helpers.gradle'
 
 project.ext {
+    //------------------------------------------------//
+    /**
+     * Spring Related Variables
+     */
+    springVersion = '4.1.7.RELEASE'
+    springBootVersion = '1.2.5.RELEASE'
+    //------------------------------------------------//
+    //------------------------------------------------//
     applicationVersion = "0.6-alpha"
     applicationVersionDebian = "1";
 
