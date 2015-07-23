@@ -1,23 +1,31 @@
 package org.project.openbaton.catalogue.nfvo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.project.openbaton.catalogue.util.IdGenerator;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Lob;
 import javax.persistence.Version;
 
 /**
- * Created by lto on 18/05/15.
+ * Created by lto on 23/07/15.
  */
 @Entity
-public class ConfigurationParameter {
+public class Script {
     @Id
     private String id = IdGenerator.createUUID();
     @Version
-    private int version;
+    private int version = 0;
 
-    private String confKey;
-    private String value;
+    private String name;
+
+    @Lob
+    @JsonIgnore
+    private byte[] payload;
+
+    public Script() {
+    }
 
     public String getId() {
         return id;
@@ -35,29 +43,29 @@ public class ConfigurationParameter {
         this.version = version;
     }
 
-    public String getConfKey() {
-        return confKey;
+    public String getName() {
+        return name;
     }
 
-    public void setConfKey(String confKey) {
-        this.confKey = confKey;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getValue() {
-        return value;
+    @JsonIgnore
+    public byte[] getPayload() {
+        return payload;
     }
 
-    public void setValue(String value) {
-        this.value = value;
+    public void setPayload(byte[] payload) {
+        this.payload = payload;
     }
 
     @Override
     public String toString() {
-        return "ConfigurationParameter{" +
+        return "Script{" +
                 "id='" + id + '\'' +
                 ", version=" + version +
-                ", confKey='" + confKey + '\'' +
-                ", value='" + value + '\'' +
+                ", name='" + name + '\'' +
                 '}';
     }
 }
