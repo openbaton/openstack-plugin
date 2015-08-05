@@ -809,4 +809,9 @@ public class OpenstackClient implements ClientInterfaces {
         quota.setRam(jcloudsQuota.getRam());
         return quota;
     }
+
+    @Override
+    public String getType() {
+        return "openstack";
+    }
 }
