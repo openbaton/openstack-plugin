@@ -1,3 +1,5 @@
+rootProject.name = 'openstack-driver'
+
 include ':vim-drivers'
 include ':catalogue'
 
