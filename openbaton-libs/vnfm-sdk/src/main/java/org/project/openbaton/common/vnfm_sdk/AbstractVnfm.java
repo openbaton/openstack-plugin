@@ -1,11 +1,12 @@
 package org.project.openbaton.common.vnfm_sdk;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.project.openbaton.catalogue.mano.common.Event;
 import org.project.openbaton.catalogue.mano.common.LifecycleEvent;
 import org.project.openbaton.catalogue.mano.record.Status;
 import org.project.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.project.openbaton.catalogue.nfvo.CoreMessage;
-import org.project.openbaton.catalogue.nfvo.EndpointType;
 import org.project.openbaton.catalogue.nfvo.VnfmManagerEndpoint;
 import org.project.openbaton.common.vnfm_sdk.exception.VnfmSdkException;
 import org.project.openbaton.common.vnfm_sdk.interfaces.VNFLifecycleManagement;
@@ -32,11 +33,11 @@ public abstract class AbstractVnfm implements VNFLifecycleManagement {
     protected Logger log = LoggerFactory.getLogger(this.getClass());
     protected VnfmManagerEndpoint vnfmManagerEndpoint;
     protected static final String nfvoQueue = "vnfm-core-actions";
-    protected VirtualNetworkFunctionRecord virtualNetworkFunctionRecord;
+    protected Gson parser=new GsonBuilder().setPrettyPrinting().create();
 
     @PreDestroy
     private void shutdown(){
-        this.unregister();
+        this.unregister(vnfmManagerEndpoint);
     }
 
     @PostConstruct
@@ -69,13 +70,13 @@ public abstract class AbstractVnfm implements VNFLifecycleManagement {
     }
 
     @Override
-    public abstract CoreMessage instantiate();
+    public abstract CoreMessage instantiate(VirtualNetworkFunctionRecord virtualNetworkFunctionRecord);
 
     @Override
     public abstract void query();
 
     @Override
-    public abstract void scale();
+    public abstract void scale(VirtualNetworkFunctionRecord virtualNetworkFunctionRecord);
 
     @Override
     public abstract void checkInstantiationFeasibility();
@@ -87,15 +88,15 @@ public abstract class AbstractVnfm implements VNFLifecycleManagement {
     public abstract void updateSoftware();
 
     @Override
-    public abstract CoreMessage modify();
+    public abstract CoreMessage modify(VirtualNetworkFunctionRecord vnfr);
 
     @Override
     public abstract void upgradeSoftware();
 
     @Override
-    public abstract CoreMessage terminate();
+    public abstract CoreMessage terminate(VirtualNetworkFunctionRecord virtualNetworkFunctionRecord);
 
-    public abstract CoreMessage handleError();
+    public abstract CoreMessage handleError(VirtualNetworkFunctionRecord virtualNetworkFunctionRecord);
 
     protected void loadProperties() {
         Resource resource = new ClassPathResource("conf.properties");
@@ -112,28 +113,27 @@ public abstract class AbstractVnfm implements VNFLifecycleManagement {
 
     protected void onAction(CoreMessage message) {
         log.trace("VNFM: Received Message: " + message.getAction());
-        this.virtualNetworkFunctionRecord = message.getPayload();
         CoreMessage coreMessage = null;
         switch (message.getAction()){
             case ALLOCATE_RESOURCES:
                 break;
             case SCALE:
-                this.scale();
+                this.scale(message.getPayload());
                 break;
             case SCALING:
                 break;
             case ERROR:
-                coreMessage = handleError();
+                coreMessage = handleError(message.getPayload());
                 break;
             case MODIFY:
-                coreMessage = this.modify();
+                coreMessage = this.modify(message.getPayload());
                 break;
             case RELEASE_RESOURCES:
-                coreMessage = this.terminate();
+                coreMessage = this.terminate(message.getPayload());
                 break;
             case GRANT_OPERATION:
             case INSTANTIATE:
-                coreMessage = this.instantiate();
+                coreMessage = this.instantiate(message.getPayload());
             case SCALE_UP_FINISHED:
                 break;
             case SCALE_DOWN_FINISHED:
@@ -143,10 +143,10 @@ public abstract class AbstractVnfm implements VNFLifecycleManagement {
             case INSTANTIATE_FINISH:
                 break;
             case CONFIGURE:
-                coreMessage = configure();
+                coreMessage = configure(message.getPayload());
                 break;
             case START:
-                coreMessage = start();
+                coreMessage = start(message.getPayload());
                 break;
         }
 
@@ -157,7 +157,7 @@ public abstract class AbstractVnfm implements VNFLifecycleManagement {
         }
     }
 
-    protected abstract CoreMessage start();
+    protected abstract CoreMessage start(VirtualNetworkFunctionRecord virtualNetworkFunctionRecord);
 
     protected LifecycleEvent getLifecycleEvent(Collection<LifecycleEvent> events, Event event){
         for(LifecycleEvent lce : events)
@@ -270,35 +270,12 @@ public abstract class AbstractVnfm implements VNFLifecycleManagement {
 
     protected abstract void sendToNfvo(CoreMessage coreMessage);
 
-    /**
-     * This method unregister the VNFM in the NFVO
-     */
-    protected abstract void unregister();
-    /**
-     * This method register the VNFM to the NFVO sending the right endpoint
-     */
-    protected abstract void register();
+    protected abstract void unregister(VnfmManagerEndpoint endpoint);
 
-    /**
-     * This method setups the VNFM and then register it to the NFVO. We recommend to not change this method or at least
-     * to override calling super()
-     */
-    protected void setup(){
-        loadProperties();
-        vnfmManagerEndpoint = new VnfmManagerEndpoint();
-        vnfmManagerEndpoint.setType(this.type);
-        vnfmManagerEndpoint.setEndpoint(this.endpoint);
-        vnfmManagerEndpoint.setEndpointType(EndpointType.JMS);
-        register();
-    }
+    protected abstract void setup();
 
     protected void sendToEmsAndUpdate(VirtualNetworkFunctionRecord vnfr, Event event, String command, String emsEndpoint) throws VnfmSdkException, JMSException {
         executeActionOnEMS(emsEndpoint, command);
-        try {
-            updateVnfr(vnfr, event, command);
-            log.debug("Updated VNFR");
-        }catch (NullPointerException e){
-            throw new VnfmSdkException(e);
-        }
+        updateVnfr(vnfr, event, command);
     }
 }
