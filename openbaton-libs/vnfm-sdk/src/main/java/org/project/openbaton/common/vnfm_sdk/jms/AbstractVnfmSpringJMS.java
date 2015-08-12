@@ -1,5 +1,7 @@
 package org.project.openbaton.common.vnfm_sdk.jms;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.project.openbaton.catalogue.nfvo.CoreMessage;
@@ -19,7 +21,6 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.core.MessageCreator;
 
 import javax.jms.*;
-import javax.jms.IllegalStateException;
 import java.io.Serializable;
 
 /**
@@ -29,8 +30,7 @@ import java.io.Serializable;
 @SpringBootApplication
 public abstract class AbstractVnfmSpringJMS extends AbstractVnfm implements MessageListener, JmsListenerConfigurer {
 
-    @Autowired
-    protected JmsListenerContainerFactory topicJmsContainerFactory;
+    private Gson parser=new GsonBuilder().setPrettyPrinting().create();
 
     @Autowired
     private JmsTemplate jmsTemplate;
@@ -138,7 +138,7 @@ public abstract class AbstractVnfmSpringJMS extends AbstractVnfm implements Mess
 
         String response = receiveTextFromQueue(vduHostname + "-vnfm-actions");
 
-        log.debug("Received from EMS ("+vduHostname+"): " + response);
+        log.debug("Received from EMS (" + vduHostname + "): " + response);
 
         if(response==null) {
             throw new NullPointerException("Response from EMS is null");
@@ -156,16 +156,7 @@ public abstract class AbstractVnfmSpringJMS extends AbstractVnfm implements Mess
     }
 
     @Override
-    protected void setup() {
-        loadProperties();
-        this.setSELECTOR(this.getEndpoint());
-        log.debug("SELECTOR: " + this.getEndpoint());
-
-        vnfmManagerEndpoint = new VnfmManagerEndpoint();
-        vnfmManagerEndpoint.setType(this.type);
-        vnfmManagerEndpoint.setEndpoint(this.endpoint);
-        vnfmManagerEndpoint.setEndpointType(EndpointType.JMS);
-
+    protected void register() {
         log.debug("Registering to queue: vnfm-register");
         sendMessageToQueue("vnfm-register", vnfmManagerEndpoint);
     }
