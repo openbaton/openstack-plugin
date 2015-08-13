@@ -10,6 +10,7 @@ import org.project.openbaton.plugin.interfaces.main.Plugin;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -126,4 +127,7 @@ public class SpringPlugin extends Plugin implements MessageListener, JmsListener
         this.jmsTemplate.send("plugin-register", getObjectMessageCreator(endpoint));
     }
 
+    public static void main(String[] args) {
+        SpringApplication.run(SpringPlugin.class);
+    }
 }
