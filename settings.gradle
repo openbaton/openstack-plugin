@@ -2,6 +2,8 @@ rootProject.name = 'openstack-driver'
 
 include ':vim-drivers'
 include ':catalogue'
+include ':monitoring'
 
-project(':vim-drivers').projectDir = file('openbaton-libs/vim-drivers')
 project(':catalogue').projectDir = file('openbaton-libs/catalogue')
+project(':monitoring').projectDir = file('openbaton-libs/monitoring')
+project(':vim-drivers').projectDir = file('openbaton-libs/vim-drivers')

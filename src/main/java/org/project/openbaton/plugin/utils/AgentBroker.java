@@ -1,8 +1,8 @@
 package org.project.openbaton.plugin.utils;
 
 import org.project.openbaton.catalogue.nfvo.EndpointType;
-import org.project.openbaton.plugin.interfaces.PluginReceiver;
-import org.project.openbaton.plugin.interfaces.PluginSender;
+import org.project.openbaton.plugin.interfaces.agents.PluginReceiver;
+import org.project.openbaton.plugin.interfaces.agents.PluginSender;
 
 /**
  * Created by lto on 13/08/15.
