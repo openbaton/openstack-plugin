@@ -15,6 +15,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.annotation.JmsListenerConfigurer;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.config.JmsListenerContainerFactory;
@@ -33,6 +34,7 @@ import java.lang.reflect.InvocationTargetException;
  */
 @SpringBootApplication
 @ComponentScan(basePackages = "org.project.openbaton")
+@EnableJms
 public class SpringPlugin extends Plugin implements MessageListener, JmsListenerConfigurer {
 
     @Autowired
