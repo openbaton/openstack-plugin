@@ -66,13 +66,4 @@ repositories {
 }
 
 dependencies {
-    compile project(':catalogue')
-    compile project(':vim-drivers')
-    compile project(':monitoring')
-
-    compile 'javax.jms:javax.jms-api:2.0.1'
-    compile 'org.springframework.boot:spring-boot-starter:' + springBootVersion
-    compile 'org.springframework:spring-jms:' + springVersion
-    compile 'org.apache.activemq:activemq-broker:5.11.1'
-
 }
