@@ -1,0 +1,3 @@
+include ':catalogue'
+
+project(':catalogue').projectDir = file('openbaton-libs/catalogue')
