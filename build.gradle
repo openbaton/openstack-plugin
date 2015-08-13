@@ -53,7 +53,6 @@ project.ext {
     /**
      * gradle Related Vars
      */
-    mainClass = 'org.project.openbaton.nfvo.main.Application'
     //------------------------------------------------//
 }
 
