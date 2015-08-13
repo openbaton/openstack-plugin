@@ -1,4 +1,4 @@
-package org.project.openbaton.plugin.interfaces;
+package org.project.openbaton.plugin.interfaces.agents;
 
 import java.io.Serializable;
 
