@@ -8,6 +8,8 @@ import org.project.openbaton.plugin.exceptions.PluginException;
 import org.project.openbaton.plugin.interfaces.agents.PluginReceiver;
 import org.project.openbaton.plugin.interfaces.agents.PluginSender;
 import org.project.openbaton.plugin.utils.AgentBroker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -20,13 +22,15 @@ import java.util.Properties;
  */
 public abstract class Plugin {
 
+    protected static Logger log = LoggerFactory.getLogger(Plugin.class);
+
     private PluginSender pluginSender;
     private PluginReceiver pluginReceiver;
 
     protected static String pluginEndpoint;
     protected static String concurrency;
 
-    protected Object pluginInstance;
+    protected static Object pluginInstance;
 
     private EndpointType senderType;
     private EndpointType receiverType;
@@ -36,19 +40,31 @@ public abstract class Plugin {
 
     protected void loadProperties() throws IOException {
         Properties properties = new Properties();
-        properties.load(pluginInstance.getClass().getResourceAsStream("plguin.conf.properties"));
-        this.senderType = EndpointType.valueOf(properties.getProperty("sender-type"));
-        this.receiverType = EndpointType.valueOf(properties.getProperty("receiver-type"));
+        properties.load(pluginInstance.getClass().getResourceAsStream("/plugin.conf.properties"));
+        this.senderType = getEndpointType(properties.getProperty("sender-type").trim());
+        this.receiverType = getEndpointType(properties.getProperty("receiver-type").trim());
         this.type = properties.getProperty("type");
         pluginEndpoint = properties.getProperty("endpoint");
         concurrency = properties.getProperty("concurrency", "1");
         endpoint = new PluginEndpoint();
         endpoint.setEndpointType(receiverType);
         endpoint.setType(type);
+        log.debug("Loaded properties: " + properties);
+    }
+
+    private EndpointType getEndpointType(String trim) {
+        switch (trim) {
+            case("JMS"):
+                return EndpointType.JMS;
+            case ("REST"):
+                return EndpointType.REST;
+            default:
+                return EndpointType.JMS;
+        }
     }
 
     protected void setup(){
-        setPluginInstance();
+//        setPluginInstance();
         try {
             loadProperties();
         } catch (IOException e) {
@@ -57,13 +73,16 @@ public abstract class Plugin {
         }
         pluginSender = AgentBroker.getSender(senderType);
         pluginReceiver = AgentBroker.getReceiver(receiverType);
+        register();
     }
 
-    protected abstract void setPluginInstance();
+    public static void setPluginInstance(Object bean){
+        pluginInstance = bean;
+    }
 
     protected PluginAnswer onMethodInvoke(PluginMessage pluginMessage) throws PluginException, InvocationTargetException, IllegalAccessException {
         Object result = null;
-        if (pluginMessage.getInterfaceClass().getName().equals(pluginInstance.getClass().getName())){
+        if (pluginMessage.getInterfaceClass().getName().equals(pluginInstance.getClass().getSuperclass().getName())){
             for (Method m : pluginInstance.getClass().getMethods()){
                 if (m.getName().equals(pluginMessage.getMethodName())){
                     result =  m.invoke(pluginInstance, pluginMessage.getParameters());

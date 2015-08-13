@@ -3,15 +3,12 @@ package org.project.openbaton.plugin.main.spring;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.project.openbaton.catalogue.nfvo.PluginAnswer;
 import org.project.openbaton.catalogue.nfvo.PluginMessage;
-import org.project.openbaton.clients.abstraction.SpringClientInterface;
-import org.project.openbaton.monitoring.abstraction.SpringMonitoringInterface;
 import org.project.openbaton.plugin.exceptions.PluginException;
 import org.project.openbaton.plugin.interfaces.main.Plugin;
-import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -32,7 +29,7 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * Created by lto on 13/08/15.
  */
-@SpringBootApplication
+@EnableAutoConfiguration
 @ComponentScan(basePackages = "org.project.openbaton")
 @EnableJms
 public class SpringPlugin extends Plugin implements MessageListener, JmsListenerConfigurer {
@@ -45,6 +42,7 @@ public class SpringPlugin extends Plugin implements MessageListener, JmsListener
 
     @Autowired
     private JmsListenerContainerFactory<?> jmsListenerContainerFactory;
+    private Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Bean
     ConnectionFactory connectionFactory() {
@@ -105,22 +103,6 @@ public class SpringPlugin extends Plugin implements MessageListener, JmsListener
         this.jmsTemplate.send(pluginEndpoint, getObjectMessageCreator(answer));
     }
 
-    @Override
-    protected void setPluginInstance() {
-        Object bean;
-        try {
-            bean = context.getBean(SpringClientInterface.class);
-        }
-        catch (NoSuchBeanDefinitionException e){
-            try {
-                bean = context.getBean(SpringMonitoringInterface.class);
-            }catch (NoSuchBeanDefinitionException e1){
-                throw new BeanCreationException("no plugin found in spring context");
-            }
-        }
-        this.pluginInstance = bean;
-    }
-
     @PostConstruct
     private void init(){
         setup();
@@ -128,10 +110,8 @@ public class SpringPlugin extends Plugin implements MessageListener, JmsListener
 
     @Override
     protected void register() {
+        log.debug("Registering plugin: " + endpoint);
         this.jmsTemplate.send("plugin-register", getObjectMessageCreator(endpoint));
     }
 
-    public static void main(String[] args) {
-        SpringApplication.run(SpringPlugin.class);
-    }
 }
