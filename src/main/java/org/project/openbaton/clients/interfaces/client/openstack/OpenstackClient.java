@@ -177,7 +177,7 @@ public class OpenstackClient extends SpringClientInterface {
     }
 
     @Override
-    public void deleteServerByIdAndWait(String extId, VimInstance vimInstance) {
+    public void deleteServerByIdAndWait(VimInstance vimInstance, String extId) {
         init(vimInstance);
         boolean deleteCompleted = false;
         deleteServerById(vimInstance, extId);
