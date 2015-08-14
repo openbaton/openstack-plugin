@@ -17,12 +17,17 @@ plugins {
     id 'net.researchgate.release' version '2.1.2'
 }
 
+apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/git.release.gradle'
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
 
-apply from: 'openbaton-libs/gradle/gradle/git.helpers.gradle'
-apply from: 'openbaton-libs/gradle/gradle/command.line.helper.gradle'
+version = '0.5-SNAPSHOT'
+
+
+
+apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/command.line.helper.gradle'
+apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/git.helpers.gradle'
 
 /**
  * Project settings
@@ -48,17 +53,11 @@ project.ext {
 
     applicationVersionSnapshot = (!applicationRelease) ? "+SNAPSHOT.${asUTC(applicationDate, 'yyyyMMdd')}.git${applicationRevision}" : ""
     applicationVersionFull = "${applicationVersion}${applicationVersionSnapshot}"
-    //------------------------------------------------//
-    //------------------------------------------------//
-    /**
-     * gradle Related Vars
-     */
-    //------------------------------------------------//
-}
 
-apply from: 'openbaton-libs/gradle/gradle/application.java.gradle'
-apply from: 'openbaton-libs/gradle/gradle/run.application.java.gradle'
-apply from: 'openbaton-libs/gradle/gradle/git.release.gradle'
+}
+apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/bom.plugin.java.gradle'
+apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/application.java.gradle'
+apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/run.application.java.gradle'
 
 repositories {
     mavenCentral()

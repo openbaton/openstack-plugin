@@ -14,7 +14,6 @@ import org.jclouds.openstack.glance.v1_0.features.ImageApi;
 import org.jclouds.openstack.glance.v1_0.options.CreateImageOptions;
 import org.jclouds.openstack.glance.v1_0.options.UpdateImageOptions;
 import org.jclouds.openstack.neutron.v2.NeutronApi;
-import org.jclouds.openstack.neutron.v2.domain.NetworkType;
 import org.jclouds.openstack.neutron.v2.features.NetworkApi;
 import org.jclouds.openstack.neutron.v2.features.SubnetApi;
 import org.jclouds.openstack.nova.v2_0.NovaApi;
@@ -321,7 +320,7 @@ public class OpenstackTest {
         ServerApi serverApi = mock(ServerApi.class);
         when(novaApi.getServerApi(anyString())).thenReturn(serverApi);
         when(serverApi.get(anyString())).thenThrow(new java.lang.NullPointerException());
-        openstackClient.deleteServerByIdAndWait(definedServer.getExtId());
+        openstackClient.deleteServerByIdAndWait(definedServer.getExtId(), );
     }
 
     @Test
