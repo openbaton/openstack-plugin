@@ -32,10 +32,9 @@ public abstract class Plugin implements MessageListener {
 
     protected PluginSender pluginSender;
 
-    protected static String pluginEndpoint;
-    protected static String concurrency;
+    protected String concurrency;
 
-    protected static Object pluginInstance;
+    protected Object pluginInstance;
 
     private EndpointType senderType;
     private EndpointType receiverType;
@@ -52,9 +51,10 @@ public abstract class Plugin implements MessageListener {
         this.senderType = getEndpointType(properties.getProperty("sender-type","JMS").trim());
         this.receiverType = getEndpointType(properties.getProperty("receiver-type","JMS").trim());
         this.type = properties.getProperty("type");
-        pluginEndpoint = properties.getProperty("endpoint");
+//        pluginEndpoint = properties.getProperty("endpoint");
         concurrency = properties.getProperty("concurrency", "1");
         endpoint = new PluginEndpoint();
+        endpoint.setEndpoint(properties.getProperty("endpoint"));
         endpoint.setEndpointType(receiverType);
         endpoint.setType(type);
         String classname = pluginInstance.getClass().getSuperclass().getSuperclass().getSimpleName();

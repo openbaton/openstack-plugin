@@ -64,7 +64,7 @@ public class SpringPlugin extends Plugin implements JmsListenerConfigurer {
     public void configureJmsListeners(JmsListenerEndpointRegistrar registrar) {
         registrar.setContainerFactory(jmsListenerContainerFactory);
         SimpleJmsListenerEndpoint endpoint = new SimpleJmsListenerEndpoint();
-        endpoint.setDestination(pluginEndpoint);
+        endpoint.setDestination(this.endpoint.getEndpoint());
         endpoint.setMessageListener(this);
         endpoint.setConcurrency(concurrency);
         endpoint.setId(String.valueOf(Thread.currentThread().getId()));
@@ -91,7 +91,7 @@ public class SpringPlugin extends Plugin implements JmsListenerConfigurer {
             e.printStackTrace();
         }
 
-        pluginSender.send(pluginEndpoint, answer);
+        pluginSender.send(endpoint.getEndpoint(), answer);
     }
 
     @PostConstruct
