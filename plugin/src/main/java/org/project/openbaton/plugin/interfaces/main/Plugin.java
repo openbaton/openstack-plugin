@@ -4,13 +4,16 @@ import org.project.openbaton.catalogue.nfvo.EndpointType;
 import org.project.openbaton.catalogue.nfvo.PluginAnswer;
 import org.project.openbaton.catalogue.nfvo.PluginEndpoint;
 import org.project.openbaton.catalogue.nfvo.PluginMessage;
+import org.project.openbaton.clients.interfaces.ClientInterfaces;
 import org.project.openbaton.plugin.exceptions.PluginException;
-import org.project.openbaton.plugin.interfaces.agents.PluginReceiver;
 import org.project.openbaton.plugin.interfaces.agents.PluginSender;
 import org.project.openbaton.plugin.utils.AgentBroker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ConfigurableApplicationContext;
 
+import javax.jms.MessageListener;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
@@ -20,12 +23,14 @@ import java.util.Properties;
 /**
  * Created by lto on 13/08/15.
  */
-public abstract class Plugin {
+public abstract class Plugin implements MessageListener {
 
     protected static Logger log = LoggerFactory.getLogger(Plugin.class);
 
-    private PluginSender pluginSender;
-    private PluginReceiver pluginReceiver;
+    @Autowired
+    private ConfigurableApplicationContext context;
+
+    protected PluginSender pluginSender;
 
     protected static String pluginEndpoint;
     protected static String concurrency;
@@ -37,6 +42,9 @@ public abstract class Plugin {
 
     protected PluginEndpoint endpoint;
     protected String type;
+
+    @Autowired
+    private AgentBroker agentBroker;
 
     protected void loadProperties() throws IOException {
         Properties properties = new Properties();
@@ -64,20 +72,19 @@ public abstract class Plugin {
     }
 
     protected void setup(){
-//        setPluginInstance();
+        setPluginInstance(null);
         try {
             loadProperties();
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-        pluginSender = AgentBroker.getSender(senderType);
-        pluginReceiver = AgentBroker.getReceiver(receiverType);
+        pluginSender = agentBroker.getSender(senderType);
         register();
     }
 
-    public static void setPluginInstance(Object bean){
-        pluginInstance = bean;
+    public void setPluginInstance(Object bean){
+        pluginInstance = context.getBean(ClientInterfaces.class);
     }
 
     protected PluginAnswer onMethodInvoke(PluginMessage pluginMessage) throws PluginException, InvocationTargetException, IllegalAccessException {
