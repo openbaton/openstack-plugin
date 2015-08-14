@@ -56,6 +56,8 @@ public abstract class Plugin implements MessageListener {
         concurrency = properties.getProperty("concurrency", "1");
         endpoint = new PluginEndpoint();
         endpoint.setEndpointType(receiverType);
+        String type = pluginInstance.getClass().getSuperclass().getSuperclass().getSimpleName();
+        log.debug("type is: " + type);
         endpoint.setType(type);
         log.debug("Loaded properties: " + properties);
     }
@@ -72,7 +74,7 @@ public abstract class Plugin implements MessageListener {
     }
 
     protected void setup(){
-        setPluginInstance(null);
+        setPluginInstance();
         try {
             loadProperties();
         } catch (IOException e) {
@@ -83,7 +85,7 @@ public abstract class Plugin implements MessageListener {
         register();
     }
 
-    public void setPluginInstance(Object bean){
+    public void setPluginInstance(){
         pluginInstance = context.getBean(ClientInterfaces.class);
     }
 
