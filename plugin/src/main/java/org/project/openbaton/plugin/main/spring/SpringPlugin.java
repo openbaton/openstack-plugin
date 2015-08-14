@@ -91,7 +91,7 @@ public class SpringPlugin extends Plugin implements JmsListenerConfigurer {
             e.printStackTrace();
         }
 
-        pluginSender.send(endpoint.getEndpoint(), answer);
+        pluginSender.send(endpoint.getEndpoint() + "-nfvo", answer);
     }
 
     @PostConstruct
