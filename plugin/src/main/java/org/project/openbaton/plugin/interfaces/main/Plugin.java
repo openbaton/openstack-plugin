@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.Properties;
 
 /**
@@ -48,8 +49,8 @@ public abstract class Plugin implements MessageListener {
     protected void loadProperties() throws IOException {
         Properties properties = new Properties();
         properties.load(pluginInstance.getClass().getResourceAsStream("/plugin.conf.properties"));
-        this.senderType = getEndpointType(properties.getProperty("sender-type","JMS").trim());
-        this.receiverType = getEndpointType(properties.getProperty("receiver-type","JMS").trim());
+        this.senderType = getEndpointType(properties.getProperty("sender-type", "JMS").trim());
+        this.receiverType = getEndpointType(properties.getProperty("receiver-type", "JMS").trim());
         this.type = properties.getProperty("type");
 //        pluginEndpoint = properties.getProperty("endpoint");
         concurrency = properties.getProperty("concurrency", "1");
@@ -57,7 +58,7 @@ public abstract class Plugin implements MessageListener {
         endpoint.setEndpoint(properties.getProperty("endpoint"));
         endpoint.setEndpointType(receiverType);
         endpoint.setType(type);
-        String classname = pluginInstance.getClass().getSuperclass().getSuperclass().getSimpleName();
+        String classname = pluginInstance.getClass().getSuperclass().getInterfaces()[0].getSimpleName();
         log.debug("classname is: " + classname);
         endpoint.setInterfaceClass(classname);
         log.debug("Loaded properties: " + properties);
@@ -94,10 +95,16 @@ public abstract class Plugin implements MessageListener {
 
     protected PluginAnswer onMethodInvoke(PluginMessage pluginMessage) throws PluginException, InvocationTargetException, IllegalAccessException {
         Object result = null;
-        if (pluginMessage.getInterfaceClass().getName().equals(pluginInstance.getClass().getSuperclass().getName())){
+        if (pluginMessage.getInterfaceClass().getName().equals(pluginInstance.getClass().getSuperclass().getInterfaces()[0].getName())){
             for (Method m : pluginInstance.getClass().getMethods()){
                 if (m.getName().equals(pluginMessage.getMethodName())){
-                    result =  m.invoke(pluginInstance, pluginMessage.getParameters());
+                    log.debug("Method name is " + m.getName());
+                    log.debug("Method parameter types are: ");
+                    for (Type t : m.getParameterTypes()){
+                        log.debug("\t*) " + t.toString());
+                    }
+                    log.debug("Actual Parameters are: " + pluginMessage.getParameters());
+                    result =  m.invoke(pluginInstance, pluginMessage.getParameters().toArray());
                 }
             }
         }else throw new PluginException("Wrong interface!");
