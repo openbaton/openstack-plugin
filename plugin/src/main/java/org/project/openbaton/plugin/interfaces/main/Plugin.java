@@ -49,28 +49,31 @@ public abstract class Plugin implements MessageListener {
     protected void loadProperties() throws IOException {
         Properties properties = new Properties();
         properties.load(pluginInstance.getClass().getResourceAsStream("/plugin.conf.properties"));
-        this.senderType = getEndpointType(properties.getProperty("sender-type").trim());
-        this.receiverType = getEndpointType(properties.getProperty("receiver-type").trim());
+        this.senderType = getEndpointType(properties.getProperty("sender-type","JMS").trim());
+        this.receiverType = getEndpointType(properties.getProperty("receiver-type","JMS").trim());
         this.type = properties.getProperty("type");
         pluginEndpoint = properties.getProperty("endpoint");
         concurrency = properties.getProperty("concurrency", "1");
         endpoint = new PluginEndpoint();
         endpoint.setEndpointType(receiverType);
-        String type = pluginInstance.getClass().getSuperclass().getSuperclass().getSimpleName();
-        log.debug("type is: " + type);
         endpoint.setType(type);
+        String classname = pluginInstance.getClass().getSuperclass().getSuperclass().getSimpleName();
+        log.debug("classname is: " + classname);
+        endpoint.setInterfaceClass(classname);
         log.debug("Loaded properties: " + properties);
     }
 
     private EndpointType getEndpointType(String trim) {
-        switch (trim) {
-            case("JMS"):
-                return EndpointType.JMS;
-            case ("REST"):
-                return EndpointType.REST;
-            default:
-                return EndpointType.JMS;
-        }
+        log.debug("Endpoint type is: " + trim);
+        return EndpointType.valueOf(trim);
+//        switch (trim) {
+//            case("JMS"):
+//                return EndpointType.JMS;
+//            case ("REST"):
+//                return EndpointType.REST;
+//            default:
+//                return EndpointType.JMS;
+//        }
     }
 
     protected void setup(){
