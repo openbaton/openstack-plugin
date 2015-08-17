@@ -22,6 +22,7 @@ import org.springframework.jms.config.SimpleJmsListenerEndpoint;
 import org.springframework.jms.core.JmsTemplate;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -97,6 +98,15 @@ public class SpringPlugin extends Plugin implements JmsListenerConfigurer {
     @PostConstruct
     private void init(){
         setup();
+    }
+
+    @PreDestroy
+    private void teardown(){ shutdown();}
+
+    @Override
+    protected void unregister() {
+        log.debug("Unregistering plugin: " + endpoint);
+        this.pluginSender.send("plugin-unregister", endpoint);
     }
 
     @Override
