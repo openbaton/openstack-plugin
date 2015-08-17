@@ -93,19 +93,13 @@ public abstract class Plugin implements MessageListener {
         register();
     }
 
-    protected void shutdown(){
-        unregister();
-    }
-
-    protected abstract void unregister();
-
     public void setPluginInstance(){
         pluginInstance = context.getBean(ClientInterfaces.class);
     }
 
     protected PluginAnswer onMethodInvoke(PluginMessage pluginMessage) throws PluginException, InvocationTargetException, IllegalAccessException {
         Object result = null;
-        if (pluginMessage.getInterfaceClass().getName().equals(interfaceName)){
+        if (pluginMessage.getInterfaceClass().getName().equals(pluginInstance.getClass().getSuperclass().getInterfaces()[0].getName())){
             for (Method m : pluginInstance.getClass().getMethods()){
                 if (m.getName().equals(pluginMessage.getMethodName())){
                     log.debug("Method name is " + m.getName());
