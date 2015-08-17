@@ -43,6 +43,8 @@ public abstract class Plugin implements MessageListener {
     protected PluginEndpoint endpoint;
     protected String type;
 
+    protected String interfaceName;
+
     @Autowired
     private AgentBroker agentBroker;
 
@@ -58,9 +60,11 @@ public abstract class Plugin implements MessageListener {
         endpoint.setEndpoint(properties.getProperty("endpoint"));
         endpoint.setEndpointType(receiverType);
         endpoint.setType(type);
-        String classname = pluginInstance.getClass().getSuperclass().getInterfaces()[0].getSimpleName();
-        log.debug("classname is: " + classname);
-        endpoint.setInterfaceClass(classname);
+        log.debug("Plugin instance is: " + pluginInstance);
+        log.debug("Plugin instance class is: " + pluginInstance.getClass().getName());
+        interfaceName = pluginInstance.getClass().getInterfaces()[0].getSimpleName();
+        log.debug("interfaceName is: " + interfaceName);
+        endpoint.setInterfaceClass(interfaceName);
         log.debug("Loaded properties: " + properties);
     }
 
@@ -89,13 +93,19 @@ public abstract class Plugin implements MessageListener {
         register();
     }
 
+    protected void shutdown(){
+        unregister();
+    }
+
+    protected abstract void unregister();
+
     public void setPluginInstance(){
         pluginInstance = context.getBean(ClientInterfaces.class);
     }
 
     protected PluginAnswer onMethodInvoke(PluginMessage pluginMessage) throws PluginException, InvocationTargetException, IllegalAccessException {
         Object result = null;
-        if (pluginMessage.getInterfaceClass().getName().equals(pluginInstance.getClass().getSuperclass().getInterfaces()[0].getName())){
+        if (pluginMessage.getInterfaceClass().getName().equals(interfaceName)){
             for (Method m : pluginInstance.getClass().getMethods()){
                 if (m.getName().equals(pluginMessage.getMethodName())){
                     log.debug("Method name is " + m.getName());
