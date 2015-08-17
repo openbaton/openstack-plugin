@@ -93,6 +93,12 @@ public abstract class Plugin implements MessageListener {
         register();
     }
 
+    protected void shutdown(){
+        unregister();
+    }
+
+    protected abstract void unregister();
+
     public void setPluginInstance(){
         pluginInstance = context.getBean(ClientInterfaces.class);
     }
