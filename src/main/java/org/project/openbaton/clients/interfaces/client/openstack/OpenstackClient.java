@@ -46,6 +46,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
+import org.jclouds.scriptbuilder.ScriptBuilder;
+import static org.jclouds.scriptbuilder.domain.Statements.exec;
+import org.jclouds.scriptbuilder.domain.OsFamily;
+
 import java.io.*;
 import java.util.*;
 
@@ -84,23 +88,36 @@ public class OpenstackClient implements ClientInterfaces {
         zones = null;
         novaApi = null;
         glanceApi = null;
-    }
-
-    @Override
-    public void init(VimInstance vimInstance) {
         Iterable<Module> modules = ImmutableSet.<Module>of(new SLF4JLoggingModule());
         Properties overrides = new Properties();
         overrides.setProperty(KeystoneProperties.CREDENTIAL_TYPE, CredentialTypes.PASSWORD_CREDENTIALS);
         overrides.setProperty(Constants.PROPERTY_RELAX_HOSTNAME, "true");
         overrides.setProperty(Constants.PROPERTY_TRUST_ALL_CERTS, "true");
         this.vimInstance = vimInstance;
-        this.novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
-        this.neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
-        this.glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
+        this.novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint("http://192.168.41.45:5000/v2.0").credentials("demo:" + "admin", "pass").modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        this.neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint("http://192.168.41.45:5000/v2.0").credentials("demo:" + "admin", "pass").modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        this.glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint("http://192.168.41.45:5000/v2.0").credentials("demo:" + "admin", "pass").modules(modules).overrides(overrides).buildApi(GlanceApi.class);
         this.zones = novaApi.getConfiguredRegions();
         if (null == defaultZone) {
             this.defaultZone = zones.iterator().next();
         }
+    }
+
+    @Override
+    public void init(VimInstance vimInstance) {
+//        Iterable<Module> modules = ImmutableSet.<Module>of(new SLF4JLoggingModule());
+//        Properties overrides = new Properties();
+//        overrides.setProperty(KeystoneProperties.CREDENTIAL_TYPE, CredentialTypes.PASSWORD_CREDENTIALS);
+//        overrides.setProperty(Constants.PROPERTY_RELAX_HOSTNAME, "true");
+//        overrides.setProperty(Constants.PROPERTY_TRUST_ALL_CERTS, "true");
+//        this.vimInstance = vimInstance;
+//        this.novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint("http://192.168.145.18:5000/v2.0").credentials("admin" + "admin", "e0ebe520a17576cc3281").modules(modules).overrides(overrides).buildApi(NovaApi.class);
+//        this.neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint("http://192.168.145.18:5000/v2.0").credentials("admin" + "admin", "e0ebe520a17576cc3281").modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+//        this.glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint("http://192.168.145.18:5000/v2.0").credentials("admin" + "admin", "e0ebe520a17576cc3281").modules(modules).overrides(overrides).buildApi(GlanceApi.class);
+//        this.zones = novaApi.getConfiguredRegions();
+//        if (null == defaultZone) {
+//            this.defaultZone = zones.iterator().next();
+//        }
     }
 
     public void setZone(String zone) {
@@ -132,6 +149,8 @@ public class OpenstackClient implements ClientInterfaces {
     public Server launchInstance(String name, String imageId, String flavorId,
                                   String keypair, Set<String> network, Set<String> secGroup,
                                   String userData) {
+
+        String script=new ScriptBuilder().addStatement(exec(userData)).render(OsFamily.UNIX);
         ServerApi serverApi = this.novaApi.getServerApi(defaultZone);
         CreateServerOptions options = CreateServerOptions.Builder.keyPairName(keypair).networks(network).securityGroupNames(secGroup).userData(userData.getBytes());
         String extId  = serverApi.create(name, imageId, flavorId, options).getId();
@@ -799,7 +818,7 @@ public class OpenstackClient implements ClientInterfaces {
 
     public Quota getQuota() {
         QuotaApi quotaApi = novaApi.getQuotaApi(defaultZone).get();
-        org.jclouds.openstack.nova.v2_0.domain.Quota jcloudsQuota = quotaApi.getByTenant(vimInstance.getTenant());
+        org.jclouds.openstack.nova.v2_0.domain.Quota jcloudsQuota = quotaApi.getByTenant("admin");
         Quota quota = new Quota();
         quota.setTenant(jcloudsQuota.getId());
         quota.setCores(jcloudsQuota.getCores());
@@ -814,4 +833,5 @@ public class OpenstackClient implements ClientInterfaces {
     public String getType() {
         return "openstack";
     }
+
 }
