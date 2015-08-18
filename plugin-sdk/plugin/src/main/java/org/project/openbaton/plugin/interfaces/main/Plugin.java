@@ -60,9 +60,18 @@ public abstract class Plugin implements MessageListener {
         endpoint.setEndpoint(properties.getProperty("endpoint"));
         endpoint.setEndpointType(receiverType);
         endpoint.setType(type);
+        try {
+            endpoint.setInterfaceVersion((String) pluginInstance.getClass().getField("interfaceVersion").get(pluginInstance));
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
         log.debug("Plugin instance is: " + pluginInstance);
         log.debug("Plugin instance class is: " + pluginInstance.getClass().getName());
-        interfaceName = pluginInstance.getClass().getInterfaces()[0].getSimpleName();
+        interfaceName = pluginInstance.getClass().getInterfaces()[0].getName();
         log.debug("interfaceName is: " + interfaceName);
         endpoint.setInterfaceClass(interfaceName);
         log.debug("Loaded properties: " + properties);
@@ -103,25 +112,47 @@ public abstract class Plugin implements MessageListener {
         pluginInstance = context.getBean(ClientInterfaces.class);
     }
 
+    /**
+     * This method will invoke the method defined in the <b>pluginMessage</b>.
+     * it needs also to check for error coming from the nfvo.
+     *
+     * @param pluginMessage
+     * @return the answer
+     * @throws PluginException
+     * @throws InvocationTargetException
+     * @throws IllegalAccessException
+     */
     protected PluginAnswer onMethodInvoke(PluginMessage pluginMessage) throws PluginException, InvocationTargetException, IllegalAccessException {
-        Object result = null;
-        if (pluginMessage.getInterfaceClass().getName().equals(pluginInstance.getClass().getSuperclass().getInterfaces()[0].getName())){
-            for (Method m : pluginInstance.getClass().getMethods()){
-                if (m.getName().equals(pluginMessage.getMethodName())){
-                    log.debug("Method name is " + m.getName());
-                    log.debug("Method parameter types are: ");
-                    for (Type t : m.getParameterTypes()){
-                        log.debug("\t*) " + t.toString());
+        switch (pluginMessage.getMethodName()){
+            case "ERROR":
+                log.error("There was an error");
+                log.error("message is: " + pluginMessage.getParameters().iterator().next());
+                this.context.close();
+                System.exit(1);
+            case "CLOSE":
+                this.context.close();
+                System.exit(0);
+            default:
+                Object result = null;
+                log.debug(pluginMessage.getInterfaceClass().getName() + " == " + interfaceName);
+                if (pluginMessage.getInterfaceClass().getName().equals(interfaceName)){
+                    for (Method m : pluginInstance.getClass().getMethods()){
+                        if (m.getName().equals(pluginMessage.getMethodName())){
+                            log.debug("Method name is " + m.getName());
+                            log.debug("Method parameter types are: ");
+                            for (Type t : m.getParameterTypes()){
+                                log.debug("\t*) " + t.toString());
+                            }
+                            log.debug("Actual Parameters are: " + pluginMessage.getParameters());
+                            result =  m.invoke(pluginInstance, pluginMessage.getParameters().toArray());
+                        }
                     }
-                    log.debug("Actual Parameters are: " + pluginMessage.getParameters());
-                    result =  m.invoke(pluginInstance, pluginMessage.getParameters().toArray());
-                }
-            }
-        }else throw new PluginException("Wrong interface!");
+                }else throw new PluginException("Wrong interface!");
 
-        PluginAnswer pluginAnswer = new PluginAnswer();
-        pluginAnswer.setAnswer((Serializable) result);
-        return pluginAnswer;
+                PluginAnswer pluginAnswer = new PluginAnswer();
+                pluginAnswer.setAnswer((Serializable) result);
+                return pluginAnswer;
+        }
     }
 
     protected abstract void register();
