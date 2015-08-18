@@ -60,9 +60,18 @@ public abstract class Plugin implements MessageListener {
         endpoint.setEndpoint(properties.getProperty("endpoint"));
         endpoint.setEndpointType(receiverType);
         endpoint.setType(type);
+        try {
+            endpoint.setInterfaceVersion((String) pluginInstance.getClass().getField("interfaceVersion").get(pluginInstance));
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
         log.debug("Plugin instance is: " + pluginInstance);
         log.debug("Plugin instance class is: " + pluginInstance.getClass().getName());
-        interfaceName = pluginInstance.getClass().getInterfaces()[0].getSimpleName();
+        interfaceName = pluginInstance.getClass().getInterfaces()[0].getName();
         log.debug("interfaceName is: " + interfaceName);
         endpoint.setInterfaceClass(interfaceName);
         log.debug("Loaded properties: " + properties);
@@ -105,7 +114,8 @@ public abstract class Plugin implements MessageListener {
 
     protected PluginAnswer onMethodInvoke(PluginMessage pluginMessage) throws PluginException, InvocationTargetException, IllegalAccessException {
         Object result = null;
-        if (pluginMessage.getInterfaceClass().getName().equals(pluginInstance.getClass().getSuperclass().getInterfaces()[0].getName())){
+        log.debug(pluginMessage.getInterfaceClass().getName() + " == " + interfaceName);
+        if (pluginMessage.getInterfaceClass().getName().equals(interfaceName)){
             for (Method m : pluginInstance.getClass().getMethods()){
                 if (m.getName().equals(pluginMessage.getMethodName())){
                     log.debug("Method name is " + m.getName());
