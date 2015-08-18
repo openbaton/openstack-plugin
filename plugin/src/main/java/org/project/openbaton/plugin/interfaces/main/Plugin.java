@@ -60,6 +60,15 @@ public abstract class Plugin implements MessageListener {
         endpoint.setEndpoint(properties.getProperty("endpoint"));
         endpoint.setEndpointType(receiverType);
         endpoint.setType(type);
+        try {
+            endpoint.setInterfaceVersion((String) pluginInstance.getClass().getField("interfaceVersion").get(pluginInstance));
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
         log.debug("Plugin instance is: " + pluginInstance);
         log.debug("Plugin instance class is: " + pluginInstance.getClass().getName());
         interfaceName = pluginInstance.getClass().getInterfaces()[0].getSimpleName();
