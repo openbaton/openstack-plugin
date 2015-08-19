@@ -11,6 +11,7 @@ import org.project.openbaton.plugin.utils.AgentBroker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import javax.jms.MessageListener;
@@ -20,6 +21,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Properties;
+
+import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
  * Created by lto on 13/08/15.
@@ -69,6 +73,7 @@ public abstract class Plugin implements MessageListener {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+        
         log.debug("Plugin instance is: " + pluginInstance);
         log.debug("Plugin instance class is: " + pluginInstance.getClass().getName());
         interfaceName = pluginInstance.getClass().getInterfaces()[0].getName();
@@ -127,8 +132,16 @@ public abstract class Plugin implements MessageListener {
             case "ERROR":
                 log.error("There was an error");
                 log.error("message is: " + pluginMessage.getParameters().iterator().next());
-                this.context.close();
-                System.exit(1);
+                log.error("please wait the shutdown of the plugin......");
+
+                try {
+                    Thread.currentThread().sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                Thread.currentThread().interrupt();
+
             case "CLOSE":
                 this.context.close();
                 System.exit(0);
