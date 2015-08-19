@@ -73,7 +73,7 @@ public abstract class Plugin implements MessageListener {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-        
+
         log.debug("Plugin instance is: " + pluginInstance);
         log.debug("Plugin instance class is: " + pluginInstance.getClass().getName());
         interfaceName = pluginInstance.getClass().getInterfaces()[0].getName();
@@ -143,8 +143,18 @@ public abstract class Plugin implements MessageListener {
                 Thread.currentThread().interrupt();
 
             case "CLOSE":
-                this.context.close();
+                log.error("shutting down the NFVO");
+                log.error("please wait the shutdown of the plugin......");
+
+                try {
+                    Thread.currentThread().sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                Thread.currentThread().interrupt();
                 System.exit(0);
+
             default:
                 Object result = null;
                 log.debug(pluginMessage.getInterfaceClass().getName() + " == " + interfaceName);
