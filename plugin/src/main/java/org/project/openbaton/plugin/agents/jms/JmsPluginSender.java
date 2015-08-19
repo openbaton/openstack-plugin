@@ -9,9 +9,7 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.core.MessageCreator;
 import org.springframework.stereotype.Service;
 
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.Session;
+import javax.jms.*;
 import java.io.Serializable;
 
 /**
@@ -24,6 +22,32 @@ public class JmsPluginSender implements PluginSender {
     @Autowired
     private JmsTemplate jmsTemplate;
     private Logger log = LoggerFactory.getLogger(this.getClass());
+
+    @Override
+    public void send(String destination, Serializable message, String selector) {
+        log.debug("sending to destination " + destination + " message: " + message);
+        jmsTemplate.send(destination, getMessageCreator(message, selector));
+    }
+
+    private MessageCreator getMessageCreator(final Serializable message, final String selector) {
+        if (message instanceof String)
+            return new MessageCreator() {
+                @Override
+                public Message createMessage(Session session) throws JMSException {
+                    TextMessage textMessage = session.createTextMessage((String) message);
+                    textMessage.setStringProperty("selector", selector);
+                    return textMessage;
+                }
+            };
+        else return new MessageCreator() {
+            @Override
+            public Message createMessage(Session session) throws JMSException {
+                ObjectMessage objectMessage = session.createObjectMessage(message);
+                objectMessage.setStringProperty("selector", selector);
+                return objectMessage;
+            }
+        };
+    }
 
     @Override
     public void send(String destination, Serializable message) {
