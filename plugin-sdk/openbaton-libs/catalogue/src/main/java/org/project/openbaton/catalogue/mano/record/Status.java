@@ -20,7 +20,7 @@ public enum Status {
  /**
   * Instantiated - Not Configured
   */
- INITIALIZED (1),
+ INITIAILZED (1),
 
  /**
   * Inactive - Configured
