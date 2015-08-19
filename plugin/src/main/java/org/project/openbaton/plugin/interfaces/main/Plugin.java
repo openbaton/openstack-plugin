@@ -143,11 +143,11 @@ public abstract class Plugin implements MessageListener {
                 Thread.currentThread().interrupt();
 
             case "CLOSE":
-                log.error("shutting down the NFVO");
-                log.error("please wait the shutdown of the plugin......");
+                log.debug("shutting down the NFVO");
+                log.debug("please wait the shutdown of the plugin......");
 
                 try {
-                    Thread.currentThread().sleep(5000);
+                    Thread.currentThread().sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
