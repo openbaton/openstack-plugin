@@ -435,7 +435,10 @@ public class OpenstackClient implements ClientInterfaces {
 //            image.setContainerFormat(jcloudsImage.getContainerFormat().toString().toUpperCase());
             return image;
         } catch (NullPointerException e) {
-            throw new NullPointerException("Image with extId: " + extId + " not found.");
+            log.warn(e.getMessage(), new NullPointerException("Image with extId: " + extId + " not found."));
+            NFVImage image = new NFVImage();
+            image.setExtId(extId);
+            return image;
         }
     }
 
@@ -855,7 +858,7 @@ public class OpenstackClient implements ClientInterfaces {
     public Quota getQuota(VimInstance vimInstance) {
         init(vimInstance);
         QuotaApi quotaApi = novaApi.getQuotaApi(defaultZone).get();
-        org.jclouds.openstack.nova.v2_0.domain.Quota jcloudsQuota = quotaApi.getByTenant("admin");
+        org.jclouds.openstack.nova.v2_0.domain.Quota jcloudsQuota = quotaApi.getByTenant(vimInstance.getTenant());
         Quota quota = new Quota();
         quota.setTenant(jcloudsQuota.getId());
         quota.setCores(jcloudsQuota.getCores());
