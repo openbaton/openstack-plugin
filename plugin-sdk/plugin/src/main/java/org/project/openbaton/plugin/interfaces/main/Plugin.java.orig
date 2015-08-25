@@ -11,6 +11,7 @@ import org.project.openbaton.plugin.utils.AgentBroker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import javax.jms.MessageListener;
@@ -20,6 +21,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Properties;
+
+import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
  * Created by lto on 13/08/15.
@@ -139,11 +143,19 @@ public abstract class Plugin implements MessageListener {
                 Thread.currentThread().interrupt();
 
             case "CLOSE":
+<<<<<<< HEAD
                 log.debug("shutting down the NFVO");
                 log.debug("please wait the shutdown of the plugin......");
 
                 try {
                     Thread.currentThread().sleep(1000);
+=======
+                log.error("shutting down the NFVO");
+                log.error("please wait the shutdown of the plugin......");
+
+                try {
+                    Thread.currentThread().sleep(5000);
+>>>>>>> 07219a15ba1416d1d5ff265a09e327aaf0477091
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -170,7 +182,6 @@ public abstract class Plugin implements MessageListener {
 
                 PluginAnswer pluginAnswer = new PluginAnswer();
                 pluginAnswer.setAnswer((Serializable) result);
-                pluginAnswer.setSelector(pluginMessage.getSelector());
                 return pluginAnswer;
         }
     }
