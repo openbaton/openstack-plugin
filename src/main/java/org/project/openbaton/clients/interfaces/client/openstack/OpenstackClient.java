@@ -1,10 +1,18 @@
 package org.project.openbaton.clients.interfaces.client.openstack;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.TypeLiteral;
 import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
 import org.jclouds.collect.IterableWithMarker;
+import org.jclouds.compute.ComputeServiceContext;
+import org.jclouds.domain.Credentials;
 import org.jclouds.io.Payload;
 import org.jclouds.io.payloads.ByteArrayPayload;
 import org.jclouds.io.payloads.InputStreamPayload;
@@ -18,6 +26,8 @@ import org.jclouds.openstack.glance.v1_0.options.CreateImageOptions;
 import org.jclouds.openstack.glance.v1_0.options.UpdateImageOptions;
 import org.jclouds.openstack.keystone.v2_0.config.CredentialTypes;
 import org.jclouds.openstack.keystone.v2_0.config.KeystoneProperties;
+import org.jclouds.openstack.keystone.v2_0.domain.Access;
+import org.jclouds.openstack.keystone.v2_0.domain.Endpoint;
 import org.jclouds.openstack.neutron.v2.NeutronApi;
 import org.jclouds.openstack.neutron.v2.domain.Network.CreateNetwork;
 import org.jclouds.openstack.neutron.v2.domain.Network.UpdateNetwork;
@@ -31,28 +41,30 @@ import org.jclouds.openstack.nova.v2_0.domain.FloatingIP;
 import org.jclouds.openstack.nova.v2_0.domain.RebootType;
 import org.jclouds.openstack.nova.v2_0.domain.SecurityGroup;
 import org.jclouds.openstack.nova.v2_0.extensions.KeyPairApi;
-import org.jclouds.openstack.nova.v2_0.extensions.QuotaApi;
 import org.jclouds.openstack.nova.v2_0.extensions.SecurityGroupApi;
 import org.jclouds.openstack.nova.v2_0.features.FlavorApi;
 import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jclouds.openstack.v2_0.domain.Resource;
+import org.jclouds.scriptbuilder.ScriptBuilder;
+import org.jclouds.scriptbuilder.domain.OsFamily;
 import org.project.openbaton.catalogue.mano.common.DeploymentFlavour;
 import org.project.openbaton.catalogue.nfvo.*;
 import org.project.openbaton.clients.exceptions.VimDriverException;
 import org.project.openbaton.clients.interfaces.ClientInterfaces;
-import org.project.openbaton.plugin.vimdrivers.SpringClientInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import org.jclouds.scriptbuilder.ScriptBuilder;
-import static org.jclouds.scriptbuilder.domain.Statements.exec;
-import org.jclouds.scriptbuilder.domain.OsFamily;
-
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.util.*;
+
+import static org.jclouds.scriptbuilder.domain.Statements.exec;
 
 /**
  * Created by mpa on 06.05.15.
@@ -93,7 +105,7 @@ public class OpenstackClient implements ClientInterfaces {
     }
 
     private void init(VimInstance vimInstance) {
- Iterable<Module> modules = ImmutableSet.<Module>of(new SLF4JLoggingModule());
+        Iterable<Module> modules = ImmutableSet.<Module>of(new SLF4JLoggingModule());
         Properties overrides = new Properties();
         overrides.setProperty(KeystoneProperties.CREDENTIAL_TYPE, CredentialTypes.PASSWORD_CREDENTIALS);
         overrides.setProperty(Constants.PROPERTY_RELAX_HOSTNAME, "true");
@@ -857,15 +869,72 @@ public class OpenstackClient implements ClientInterfaces {
     @Override
     public Quota getQuota(VimInstance vimInstance) {
         init(vimInstance);
-        QuotaApi quotaApi = novaApi.getQuotaApi(defaultZone).get();
-        org.jclouds.openstack.nova.v2_0.domain.Quota jcloudsQuota = quotaApi.getByTenant(vimInstance.getTenant());
         Quota quota = new Quota();
-        quota.setTenant(jcloudsQuota.getId());
-        quota.setCores(jcloudsQuota.getCores());
-        quota.setFloatingIps(jcloudsQuota.getFloatingIps());
-        quota.setInstances(jcloudsQuota.getInstances());
-        quota.setKeyPairs(jcloudsQuota.getKeyPairs());
-        quota.setRam(jcloudsQuota.getRam());
+        ContextBuilder contextBuilder = ContextBuilder.newBuilder("openstack-nova").credentials(vimInstance.getUsername(), vimInstance.getPassword()).endpoint(vimInstance.getAuthUrl());
+        ComputeServiceContext context = contextBuilder.buildView(ComputeServiceContext.class);
+        Function<Credentials, Access> auth = context.utils().injector().getInstance(Key.get(new TypeLiteral<Function<Credentials, Access>>() {}));
+        //Get Access and all information
+        Access access = auth.apply(new Credentials.Builder<Credentials>().identity(vimInstance.getTenant() + ":" + vimInstance.getUsername()).credential(vimInstance.getPassword()).build());
+        //Get Tenant ID of user
+        String tenant_id = access.getToken().getTenant().get().getId();
+        //Get nova endpoint
+        URI endpoint = null;
+        for (org.jclouds.openstack.keystone.v2_0.domain.Service service: access) {
+            if (service.getName().equals("nova")) {
+                for (Endpoint end : service) {
+                    endpoint = end.getPublicURL();
+                    break;
+                }
+                break;
+            }
+        }
+        HttpURLConnection connection = null;
+        try {
+            //Prepare quota request
+            URL url = new URL(endpoint + "/os-quota-sets/" + tenant_id);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("X-Auth-Token", access.getToken().getId());
+            //Get Response
+            InputStream is = connection.getInputStream();
+            BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+            StringBuilder response = new StringBuilder(); // or StringBuffer if not Java 5+
+            String line;
+            while((line = rd.readLine()) != null) {
+                response.append(line);
+                response.append('\r');
+            }
+            rd.close();
+            //Parse json to object
+            JsonParser parser = new JsonParser();
+            JsonObject json = (JsonObject) parser.parse(response.toString());
+            JsonObject quota_set = json.getAsJsonObject("quota_set");
+            //Fill out quota
+            quota.setTenant(vimInstance.getTenant());
+            quota.setCores(Integer.parseInt(quota_set.get("cores").toString()));
+            quota.setRam(Integer.parseInt(quota_set.get("ram").toString()));
+            quota.setInstances(Integer.parseInt(quota_set.get("instances").toString()));
+            quota.setFloatingIps(Integer.parseInt(quota_set.get("floating_ips").toString()));
+            quota.setKeyPairs(Integer.parseInt(quota_set.get("key_pairs").toString()));
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(connection != null) {
+                connection.disconnect();
+            }
+        }
+//        QuotaApi quotaApi = novaApi.getQuotaApi(defaultZone).get();
+//        org.jclouds.openstack.nova.v2_0.domain.Quota jcloudsQuota = quotaApi.getByTenant(vimInstance.getTenant());
+//        Quota quota = new Quota();
+//        quota.setTenant(jcloudsQuota.getId());
+//        quota.setCores(jcloudsQuota.getCores());
+//        quota.setFloatingIps(jcloudsQuota.getFloatingIps());
+//        quota.setInstances(jcloudsQuota.getInstances());
+//        quota.setKeyPairs(jcloudsQuota.getKeyPairs());
+//        quota.setRam(jcloudsQuota.getRam());
         return quota;
     }
 
