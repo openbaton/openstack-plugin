@@ -1,18 +1,15 @@
 package org.project.openbaton.catalogue.security;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
-
 import org.project.openbaton.catalogue.util.IdGenerator;
+
+import javax.persistence.*;
 
 @Entity
 @Table(name = "USERS")
 public class User {
 
 	@Id
-	private	String id = IdGenerator.createUUID();
+	private	String id;
 
 	@Column(unique = true)
 	private	String	username;
@@ -30,6 +27,10 @@ public class User {
 	}
 	public void setId(String id) {
 		this.id = id;
+	}
+	@PrePersist
+	public void ensureId(){
+		id=IdGenerator.createUUID();
 	}
 	public String getUsername() {
 		return username;
