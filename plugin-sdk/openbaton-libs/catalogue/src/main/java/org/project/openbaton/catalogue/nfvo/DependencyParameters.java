@@ -1,30 +1,29 @@
 package org.project.openbaton.catalogue.nfvo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.project.openbaton.catalogue.util.IdGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.Map;
 
 /**
- * Created by lto on 23/07/15.
+ * Created by lto on 21/08/15.
  */
 @Entity
-public class Script implements Serializable{
+public class DependencyParameters implements Serializable{
+
     @Id
     private String id;
     @Version
     private int version = 0;
 
-    private String name;
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Map<String, String> parameters;
 
-    @Lob
-    @JsonIgnore
-    private byte[] payload;
-
-    public Script() {
+    @PrePersist
+    public void ensureId(){
+        id=IdGenerator.createUUID();
     }
-
     public String getId() {
         return id;
     }
@@ -33,10 +32,6 @@ public class Script implements Serializable{
         this.id = id;
     }
 
-    @PrePersist
-    public void ensureId(){
-        id=IdGenerator.createUUID();
-    }
     public int getVersion() {
         return version;
     }
@@ -45,29 +40,20 @@ public class Script implements Serializable{
         this.version = version;
     }
 
-    public String getName() {
-        return name;
+    public Map<String, String> getParameters() {
+        return parameters;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    @JsonIgnore
-    public byte[] getPayload() {
-        return payload;
-    }
-
-    public void setPayload(byte[] payload) {
-        this.payload = payload;
+    public void setParameters(Map<String, String> parameters) {
+        this.parameters = parameters;
     }
 
     @Override
     public String toString() {
-        return "Script{" +
+        return "DependencyParameters{" +
                 "id='" + id + '\'' +
                 ", version=" + version +
-                ", name='" + name + '\'' +
+                ", parameters=" + parameters +
                 '}';
     }
 }
