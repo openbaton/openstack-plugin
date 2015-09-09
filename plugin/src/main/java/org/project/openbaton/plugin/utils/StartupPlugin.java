@@ -3,11 +3,12 @@ package org.project.openbaton.plugin.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 
 /**
  * Created by lto on 09/09/15.
@@ -15,29 +16,26 @@ import java.rmi.server.UnicastRemoteObject;
 public class StartupPlugin {
     protected static Logger log = LoggerFactory.getLogger(StartupPlugin.class);
 
-    public static <T extends Remote> void register(Class<T> plugin, int port, String name) throws Exception {
-        T stub = getStub(plugin);
-        Registry registry = LocateRegistry.createRegistry(port);
+    private static <T extends Remote> Remote getStub(Class<T> plugin) throws InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException, NoSuchMethodException, RemoteException {
+        Remote service = plugin.getConstructor().newInstance();
+        return service;
+    }
 
-        registry.rebind(name, stub);
+    public static <T extends Remote> void register(Class<T> clazz, String name, String registryIp) throws InvocationTargetException, NoSuchMethodException, RemoteException, InstantiationException, IllegalAccessException, MalformedURLException {
+        Naming.rebind("//" + registryIp + ":1099/" + name, getStub(clazz));
         log.debug("Remote service bound");
     }
-    public static <T extends Remote> void register(Class<T> plugin, String host, int port, String name) throws Exception {
-        try {
-            T stub = getStub(plugin);
 
-            Registry registry = LocateRegistry.getRegistry(host, port);
-
-            registry.rebind(name, stub);
-            log.debug("Remote service bound");
-        } catch (Exception e) {
-            log.error("Remote service exception:");
-            e.printStackTrace();
-        }
+    public static <T extends Remote> void register(Class<T> clazz, String name, String registryIp, int port) throws InvocationTargetException, NoSuchMethodException, RemoteException, InstantiationException, IllegalAccessException, MalformedURLException {
+        Naming.rebind("//" + registryIp + ":" + port + "/" + name, getStub(clazz));
+        log.debug("Remote service bound");
     }
 
-    private static <T extends Remote> T getStub(Class<T> plugin) throws InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException, NoSuchMethodException, RemoteException {
-        T service = plugin.getConstructor().newInstance();
-        return (T) UnicastRemoteObject.exportObject(service, 0);
+    public static void unregister(String name, String registryIp, int port) throws RemoteException, NotBoundException, MalformedURLException {
+        Naming.unbind("//" + registryIp + ":" + port + "/" + name);
+    }
+
+    public static void unregister(String name, String registryIp) throws RemoteException, NotBoundException, MalformedURLException {
+        Naming.unbind("//" + registryIp + ":1099/" + name);
     }
 }
