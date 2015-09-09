@@ -60,6 +60,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.util.*;
 
 import static org.jclouds.scriptbuilder.domain.Statements.exec;
@@ -67,7 +68,7 @@ import static org.jclouds.scriptbuilder.domain.Statements.exec;
 /**
  * Created by mpa on 06.05.15.
  */
-public class OpenstackClient implements ClientInterfaces {
+public class OpenstackClient extends ClientInterfaces {
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -80,6 +81,9 @@ public class OpenstackClient implements ClientInterfaces {
     private Set<String> zones;
     private String defaultZone = null;
 
+    public OpenstackClient() throws RemoteException {
+    }
+
     public void setNovaApi(NovaApi novaApi) {
         this.novaApi = novaApi;
     }
@@ -91,14 +95,15 @@ public class OpenstackClient implements ClientInterfaces {
         this.glanceApi = glanceApi;
     }
 
-    public OpenstackClient() {
-        //TODO get properties from configurations
-        vimInstance = null;
-        neutronApi = null;
-        zones = null;
-        novaApi = null;
-        glanceApi = null;
-    }
+//    public OpenstackClient() throws RemoteException {
+//        super();
+//        //TODO get properties from configurations
+//        vimInstance = null;
+//        neutronApi = null;
+//        zones = null;
+//        novaApi = null;
+//        glanceApi = null;
+//    }
 
     private void init(VimInstance vimInstance) {
         Iterable<Module> modules = ImmutableSet.<Module>of(new SLF4JLoggingModule());
@@ -940,6 +945,6 @@ public class OpenstackClient implements ClientInterfaces {
     }
 
     public static void main(String[] args) {
-        PluginStarter.run(OpenstackClient.class, "openstack-plugin", 19345);
+        PluginStarter.run(OpenstackClient.class, "openstack-plugin", "localhost");
     }
 }
