@@ -2,7 +2,6 @@ package org.project.openbaton.clients.interfaces.client.openstack;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.inject.Key;
@@ -52,10 +51,9 @@ import org.project.openbaton.catalogue.mano.common.DeploymentFlavour;
 import org.project.openbaton.catalogue.nfvo.*;
 import org.project.openbaton.clients.exceptions.VimDriverException;
 import org.project.openbaton.clients.interfaces.ClientInterfaces;
+import org.project.openbaton.plugin.PluginStarter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -69,8 +67,6 @@ import static org.jclouds.scriptbuilder.domain.Statements.exec;
 /**
  * Created by mpa on 06.05.15.
  */
-@Service
-@Scope("prototype")
 public class OpenstackClient implements ClientInterfaces {
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
@@ -943,4 +939,7 @@ public class OpenstackClient implements ClientInterfaces {
         return "openstack";
     }
 
+    public static void main(String[] args) {
+        PluginStarter.run(OpenstackClient.class, "openstack-plugin", 19345);
+    }
 }
