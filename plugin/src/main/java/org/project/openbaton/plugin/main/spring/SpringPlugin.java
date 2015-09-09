@@ -97,7 +97,12 @@ public class SpringPlugin extends Plugin implements JmsListenerConfigurer {
 
     @PostConstruct
     private void init(){
-        setup();
+        try {
+            setup();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
     @PreDestroy
