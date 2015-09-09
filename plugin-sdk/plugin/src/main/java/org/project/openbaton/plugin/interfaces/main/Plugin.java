@@ -87,7 +87,7 @@ public abstract class Plugin implements MessageListener {
 
     protected void setup() throws Exception {
         setPluginInstance();
-        StartupPlugin.register((Class<Remote>) pluginInstance);
+        StartupPlugin.register((Class<Remote>) pluginInstance.getClass());
         try {
             loadProperties();
         } catch (IOException e) {
