@@ -16,12 +16,12 @@ import static org.mockito.Mockito.mock;
 @ComponentScan(basePackages = {"org.project.openbaton"})
 public class ApplicationTest {
 
-    @Bean
-    ClientInterfaces openstackClient(){
-        ClientInterfaces clientInterfaces = mock(ClientInterfaces.class);
-
-        return clientInterfaces;
-    }
+//    @Bean
+//    ClientInterfaces openstackClient(){
+//        ClientInterfaces clientInterfaces = mock(ClientInterfaces.class);
+//
+//        return clientInterfaces;
+//    }
 
     /**
      * Testing if the context contains all the needed api
