@@ -8,6 +8,7 @@ import org.project.openbaton.clients.interfaces.ClientInterfaces;
 import org.project.openbaton.plugin.exceptions.PluginException;
 import org.project.openbaton.plugin.interfaces.agents.PluginSender;
 import org.project.openbaton.plugin.utils.AgentBroker;
+import org.project.openbaton.plugin.utils.StartupPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.rmi.Remote;
 import java.util.Properties;
 
 /**
@@ -81,18 +83,11 @@ public abstract class Plugin implements MessageListener {
     private EndpointType getEndpointType(String trim) {
         log.debug("Endpoint type is: " + trim);
         return EndpointType.valueOf(trim);
-//        switch (trim) {
-//            case("JMS"):
-//                return EndpointType.JMS;
-//            case ("REST"):
-//                return EndpointType.REST;
-//            default:
-//                return EndpointType.JMS;
-//        }
     }
 
-    protected void setup(){
+    protected void setup() throws Exception {
         setPluginInstance();
+        StartupPlugin.register((Class<Remote>) pluginInstance);
         try {
             loadProperties();
         } catch (IOException e) {
