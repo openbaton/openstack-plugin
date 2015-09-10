@@ -54,7 +54,7 @@ project.ext {
     applicationVersionSnapshot = (!applicationRelease) ? "+SNAPSHOT.${asUTC(applicationDate, 'yyyyMMdd')}.git${applicationRevision}" : ""
     applicationVersionFull = "${applicationVersion}${applicationVersionSnapshot}"
 
-    mainClass = 'org.project.openbaton.clients.interfaces.client.openstack.OpenstackClient'
+    mainClass = 'org.project.openbaton.clients.interfaces.client.openstack.Starter'
 }
 apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/bom.plugin.java.gradle'
 apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/application.java.gradle'
@@ -67,7 +67,7 @@ repositories {
 dependencies {
     compile project(":vim-drivers")
     compile project(":catalogue")
-	
+
     compile ('org.apache.jclouds.driver:jclouds-slf4j:1.9.0')
     compile ('org.apache.jclouds.driver:jclouds-sshj:1.9.0')
     compile ('org.apache.jclouds.api:openstack-keystone:1.9.0')
@@ -84,14 +84,3 @@ dependencies {
     testCompile 'org.springframework:spring-test:' + springVersion
 }
 
-    
-
-//jar {
-//    includeEmptyDirs = false
-//
-//    exclude 'META-INF/*.SF'
-//    exclude 'META-INF/*.DSA'
-//    exclude 'META-INF/*.RSA'
-//
-//    from configurations.releaseJars.collect { it.isDirectory() ? it : zipTree(it) }
-//}

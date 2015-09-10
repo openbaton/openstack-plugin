@@ -8,5 +8,7 @@ import org.project.openbaton.plugin.PluginStarter;
 public class Starter {
     public static void main(String[] args) {
         PluginStarter.run(OpenstackClient.class, "openstack-plugin", "localhost");
+
+
     }
 }
