@@ -4,10 +4,6 @@ import org.project.openbaton.plugin.utils.StartupPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.MalformedURLException;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
-
 /**
  * Created by lto on 09/09/15.
  */
