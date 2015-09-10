@@ -51,7 +51,6 @@ import org.project.openbaton.catalogue.mano.common.DeploymentFlavour;
 import org.project.openbaton.catalogue.nfvo.*;
 import org.project.openbaton.clients.exceptions.VimDriverException;
 import org.project.openbaton.clients.interfaces.ClientInterfaces;
-import org.project.openbaton.plugin.PluginStarter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -942,9 +941,5 @@ public class OpenstackClient extends ClientInterfaces {
     @Override
     public String getType(VimInstance vimInstance) {
         return "openstack";
-    }
-
-    public static void main(String[] args) {
-        PluginStarter.run(OpenstackClient.class, "openstack-plugin", "localhost");
     }
 }
