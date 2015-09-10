@@ -67,7 +67,7 @@ import static org.jclouds.scriptbuilder.domain.Statements.exec;
 /**
  * Created by mpa on 06.05.15.
  */
-public class OpenstackClient extends ClientInterfaces {
+public class OpenstackClient implements ClientInterfaces {
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
 

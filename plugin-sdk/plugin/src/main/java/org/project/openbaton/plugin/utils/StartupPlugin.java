@@ -9,6 +9,7 @@ import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 
 /**
  * Created by lto on 09/09/15.
@@ -18,7 +19,7 @@ public class StartupPlugin {
 
     private static <T extends Remote> Remote getStub(Class<T> plugin) throws InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException, NoSuchMethodException, RemoteException {
         Remote service = plugin.getConstructor().newInstance();
-        return service;
+        return UnicastRemoteObject.exportObject(service,0);
     }
 
     public static <T extends Remote> void register(Class<T> clazz, String name, String registryIp) throws InvocationTargetException, NoSuchMethodException, RemoteException, InstantiationException, IllegalAccessException, MalformedURLException {
