@@ -1,13 +1,7 @@
 
 dependencies {
-    compile project(':catalogue')
+    compile 'org.slf4j:slf4j-api:1.7.12'
+    compile 'org.slf4j:slf4j-simple:1.7.12'
     compile project(':vim-drivers')
-    compile project(':monitoring')
 
-    compile 'javax.jms:javax.jms-api:2.0.1'
-    compile 'org.springframework.boot:spring-boot-starter:' + springBootVersion
-    compile 'org.springframework:spring-jms:' + springVersion
-    compile 'org.apache.activemq:activemq-broker:5.11.1'
-
-    compile 'org.hibernate:hibernate-core:4.3.10.Final'
 }

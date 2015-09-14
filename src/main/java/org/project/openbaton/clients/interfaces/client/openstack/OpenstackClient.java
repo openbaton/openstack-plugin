@@ -2,7 +2,6 @@ package org.project.openbaton.clients.interfaces.client.openstack;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.inject.Key;
@@ -54,14 +53,13 @@ import org.project.openbaton.clients.exceptions.VimDriverException;
 import org.project.openbaton.clients.interfaces.ClientInterfaces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.util.*;
 
 import static org.jclouds.scriptbuilder.domain.Statements.exec;
@@ -69,8 +67,6 @@ import static org.jclouds.scriptbuilder.domain.Statements.exec;
 /**
  * Created by mpa on 06.05.15.
  */
-@Service
-@Scope("prototype")
 public class OpenstackClient implements ClientInterfaces {
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
@@ -84,6 +80,9 @@ public class OpenstackClient implements ClientInterfaces {
     private Set<String> zones;
     private String defaultZone = null;
 
+    public OpenstackClient() throws RemoteException {
+    }
+
     public void setNovaApi(NovaApi novaApi) {
         this.novaApi = novaApi;
     }
@@ -95,14 +94,15 @@ public class OpenstackClient implements ClientInterfaces {
         this.glanceApi = glanceApi;
     }
 
-    public OpenstackClient() {
-        //TODO get properties from configurations
-        vimInstance = null;
-        neutronApi = null;
-        zones = null;
-        novaApi = null;
-        glanceApi = null;
-    }
+//    public OpenstackClient() throws RemoteException {
+//        super();
+//        //TODO get properties from configurations
+//        vimInstance = null;
+//        neutronApi = null;
+//        zones = null;
+//        novaApi = null;
+//        glanceApi = null;
+//    }
 
     private void init(VimInstance vimInstance) {
         Iterable<Module> modules = ImmutableSet.<Module>of(new SLF4JLoggingModule());
@@ -942,5 +942,4 @@ public class OpenstackClient implements ClientInterfaces {
     public String getType(VimInstance vimInstance) {
         return "openstack";
     }
-
 }
