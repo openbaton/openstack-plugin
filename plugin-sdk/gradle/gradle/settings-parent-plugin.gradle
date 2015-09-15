@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2015 Fraunhofer FOKUS
- *
+ * Copyright (c) 2015. Fraunhofer FOKUS
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,16 +13,10 @@
  * limitations under the License.
  */
 
-rootProject.name = 'openbaton-libs'
+apply from: 'settings-plugin.gradle'
 
-include 'catalogue'
-include 'vim-drivers'
-include 'exception'
-include 'plugin'
-include 'vim-impl'
-include 'vim-int'
-include 'vnfm-sdk'
-include 'vnfm-sdk-jms'
-include 'vnfm-sdk-rest'
-include 'monitoring'
-
+rootProject.children.each { project ->
+    String relativeProjectPath = project.projectDir.path.replace(settingsDir.path, "")
+//    println 'relativeProjectPath =====' + relativeProjectPath
+    project.projectDir = new File("openbaton-libs/$relativeProjectPath")
+}
