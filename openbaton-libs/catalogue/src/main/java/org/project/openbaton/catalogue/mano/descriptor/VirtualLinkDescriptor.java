@@ -19,8 +19,8 @@ import java.util.Set;
  */
 @Entity
 public class VirtualLinkDescriptor extends AbstractVirtualLink {
-	
-	/**
+
+    /**
      * Vendor generating this VLD
      * */
     private String vendor;
