@@ -16,10 +16,10 @@ import java.io.Serializable;
 public class ConnectionPoint implements Serializable{
 
     /*ID of the Connection Point.*/
-	@Id
+    @Id
     protected String id;
-	@Version
-	protected int version = 0;
+    @Version
+    protected int version = 0;
 
     /**
      *
@@ -58,7 +58,7 @@ public class ConnectionPoint implements Serializable{
     public String toString() {
         return "ConnectionPoint{" +
                 "id='" + id + '\'' +
-                ", version='" + version +
+                ", hb_version='" + version +
                 ", type='" + type + '\'' +
                 '}';
     }
