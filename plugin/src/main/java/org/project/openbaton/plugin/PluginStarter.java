@@ -7,13 +7,13 @@ import org.slf4j.LoggerFactory;
 import java.net.MalformedURLException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.Properties;
 
 /**
  * Created by lto on 09/09/15.
  */
 public class PluginStarter {
 
-//    static volatile boolean keepRunning = true;
 protected static Logger log = LoggerFactory.getLogger(PluginStarter.class);
 
     public static void run(Class clazz, final String name, final String registryIp){
@@ -21,9 +21,11 @@ protected static Logger log = LoggerFactory.getLogger(PluginStarter.class);
             log.info("Starting plugin with name: " + name);
             log.debug("Registry ip: " + registryIp);
             log.debug("Class to register: " + clazz.getName());
-            StartupPlugin.register(clazz, name, registryIp);
+            Properties properties = new Properties();
+            properties.load(clazz.getResourceAsStream("/plugin.conf.properties"));
 
-//            StartupPlugin.unregister(name, registryIp);
+            StartupPlugin.register(clazz, properties.getProperty("type", "unknown") + "." + name, registryIp, 1099);
+
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(2);
@@ -54,9 +56,11 @@ protected static Logger log = LoggerFactory.getLogger(PluginStarter.class);
             log.info("Starting plugin with name: " + name);
             log.debug("Registry ip: " + registryIp);
             log.debug("Class to register: " + clazz.getName());
-            StartupPlugin.register(clazz, name, registryIp, port);
+            Properties properties = new Properties();
+            properties.load(clazz.getResourceAsStream("/plugin.conf.properties"));
 
-//            StartupPlugin.unregister(name, registryIp);
+            StartupPlugin.register(clazz, properties.getProperty("type","unknown")+"."+name, registryIp, port);
+
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(2);
