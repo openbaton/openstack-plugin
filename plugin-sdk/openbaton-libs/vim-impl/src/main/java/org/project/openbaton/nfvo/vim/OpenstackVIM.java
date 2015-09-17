@@ -288,8 +288,8 @@ public class OpenstackVIM extends Vim {// TODO and so on...
         String image = this.chooseImage(vdu.getVm_image(), vimInstance);
 
         Set<String> networks = new HashSet<String>();
-        for (VNFDConnectionPoint vnfdConnectionPoint : vnfComponent.getConnection_point())
-            networks.add(vnfdConnectionPoint.getExtId());
+        //for (VNFDConnectionPoint vnfdConnectionPoint : vnfComponent.getConnection_point())
+            //networks.add(vnfdConnectionPoint.getExtId());
 
         String flavorExtId = getFlavorExtID(vnfr.getDeployment_flavour_key(), vimInstance);
         vdu.setHostname(vnfr.getName());
@@ -308,6 +308,7 @@ public class OpenstackVIM extends Vim {// TODO and so on...
 //        vdu.setExtId(server.getExtId());
         VNFCInstance vnfcInstance = new VNFCInstance();
         vnfcInstance.setVc_id(server.getExtId());
+        vnfcInstance.setHostname(hostname);
         vnfcInstance.setVim_id(vdu.getVimInstance().getId());
 
         if (vnfcInstance.getConnection_point() == null)
@@ -316,8 +317,8 @@ public class OpenstackVIM extends Vim {// TODO and so on...
         for (VNFDConnectionPoint connectionPoint : vnfComponent.getConnection_point()) {
             VNFDConnectionPoint connectionPoint_new = new VNFDConnectionPoint();
             connectionPoint_new.setVirtual_link_reference(connectionPoint.getVirtual_link_reference());
-            connectionPoint_new.setExtId(connectionPoint.getExtId());
-            connectionPoint_new.setName(connectionPoint.getName());
+            //connectionPoint_new.setExtId(connectionPoint.getExtId());
+            //connectionPoint_new.setName(connectionPoint.getName());
             connectionPoint_new.setType(connectionPoint.getType());
 
             vnfcInstance.getConnection_point().add(connectionPoint_new);
