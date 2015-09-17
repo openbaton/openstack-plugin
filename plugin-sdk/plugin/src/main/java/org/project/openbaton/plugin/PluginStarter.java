@@ -1,5 +1,6 @@
 package org.project.openbaton.plugin;
 
+import org.project.openbaton.clients.interfaces.ClientInterfaces;
 import org.project.openbaton.plugin.utils.StartupPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,23 +8,30 @@ import org.slf4j.LoggerFactory;
 import java.net.MalformedURLException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.Properties;
 
 /**
  * Created by lto on 09/09/15.
  */
 public class PluginStarter {
 
-//    static volatile boolean keepRunning = true;
-protected static Logger log = LoggerFactory.getLogger(PluginStarter.class);
+    protected static Logger log = LoggerFactory.getLogger(PluginStarter.class);
 
-    public static void run(Class clazz, final String name, final String registryIp){
+    public static void run(Class clazz, final String name, final String registryIp) {
         try {
             log.info("Starting plugin with name: " + name);
             log.debug("Registry ip: " + registryIp);
             log.debug("Class to register: " + clazz.getName());
-            StartupPlugin.register(clazz, name, registryIp);
+            Properties properties = new Properties();
+            properties.load(clazz.getResourceAsStream("/plugin.conf.properties"));
+            String inte = "";
+            for (Class interf : clazz.getInterfaces())
+                if (interf.getName().equals(ClientInterfaces.class.getName()))
+                    inte = "vim-drivers";
+                else
+                    inte = "monitor";
+            StartupPlugin.register(clazz, inte + "." + properties.getProperty("type", "unknown") + "." + name, registryIp, 1099);
 
-//            StartupPlugin.unregister(name, registryIp);
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(2);
@@ -49,14 +57,23 @@ protected static Logger log = LoggerFactory.getLogger(PluginStarter.class);
         });
     }
 
-    public static void run(Class clazz, final String name, final String registryIp, int port){
+    public static void run(Class clazz, final String name, final String registryIp, int port) {
         try {
             log.info("Starting plugin with name: " + name);
             log.debug("Registry ip: " + registryIp);
             log.debug("Class to register: " + clazz.getName());
-            StartupPlugin.register(clazz, name, registryIp, port);
+            Properties properties = new Properties();
+            properties.load(clazz.getResourceAsStream("/plugin.conf.properties"));
+            String inte = "";
+            for (Class interf : clazz.getInterfaces())
+                if (interf.getName().equals(ClientInterfaces.class.getName()))
+                    inte = "vim-drivers";
+                else
+                    inte = "monitor";
 
-//            StartupPlugin.unregister(name, registryIp);
+
+            StartupPlugin.register(clazz, inte + "." + properties.getProperty("type", "unknown") + "." + name, registryIp, port);
+
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(2);
