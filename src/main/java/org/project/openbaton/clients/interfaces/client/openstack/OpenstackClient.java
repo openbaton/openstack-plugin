@@ -306,9 +306,9 @@ public class OpenstackClient implements ClientInterfaces {
     }
 
     @Override
-    public NFVImage addImage(VimInstance vimInstance, NFVImage image, InputStream payload) {
+    public NFVImage addImage(VimInstance vimInstance, NFVImage image, byte[] imageFile) {
         init(vimInstance);
-        NFVImage addedImage = addImage(image.getName(), payload, image.getDiskFormat(), image.getContainerFormat(), image.getMinDiskSpace(), image.getMinRam(), image.isPublic());
+        NFVImage addedImage = addImage(image.getName(), new ByteArrayInputStream(imageFile), image.getDiskFormat(), image.getContainerFormat(), image.getMinDiskSpace(), image.getMinRam(), image.isPublic());
         image.setName(addedImage.getName());
         image.setExtId(addedImage.getExtId());
         image.setCreated(addedImage.getCreated());
