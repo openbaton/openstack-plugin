@@ -22,11 +22,6 @@ public class StartupPlugin {
         return UnicastRemoteObject.exportObject(service,0);
     }
 
-//    public static <T extends Remote> void register(Class<T> clazz, String name, String registryIp) throws InvocationTargetException, NoSuchMethodException, RemoteException, InstantiationException, IllegalAccessException, MalformedURLException {
-//        Naming.rebind("//" + registryIp + ":1099/" + name, getStub(clazz));
-//        log.debug("Remote service bound");
-//    }
-
     public static <T extends Remote> void register(Class<T> clazz, String name, String registryIp, int port) throws InvocationTargetException, NoSuchMethodException, RemoteException, InstantiationException, IllegalAccessException, MalformedURLException {
         Naming.rebind("//" + registryIp + ":" + port + "/" + name, getStub(clazz));
         log.debug("Remote service bound");
