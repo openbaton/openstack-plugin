@@ -5,10 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
-import java.rmi.Naming;
-import java.rmi.NotBoundException;
-import java.rmi.Remote;
-import java.rmi.RemoteException;
+import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
 
 /**
@@ -28,7 +25,23 @@ public class StartupPlugin {
 //    }
 
     public static <T extends Remote> void register(Class<T> clazz, String name, String registryIp, int port) throws InvocationTargetException, NoSuchMethodException, RemoteException, InstantiationException, IllegalAccessException, MalformedURLException {
-        Naming.rebind("//" + registryIp + ":" + port + "/" + name, getStub(clazz));
+        int i=0;
+        log.info("Trying to connect to " + registryIp + ":" + port + " for 100 sec...");
+        while (true)
+            try {
+                i++;
+                Naming.rebind("//" + registryIp + ":" + port + "/" + name, getStub(clazz));
+                break;
+            }catch (ConnectException e){
+                if (i == 50){
+                    throw e;
+                }
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
+            }
         log.debug("Remote service bound");
     }
 
