@@ -160,11 +160,14 @@ public class OpenstackClient implements ClientInterfaces {
     }
 
     @Override
-    public Server launchInstanceAndWait(VimInstance vimInstance, String name, String imageId, String flavorId,
-                                  String keypair, Set<String> network, Set<String> secGroup,
-                                  String userData) throws VimDriverException {
+    public Server launchInstanceAndWait(VimInstance vimInstance, String name, String imageId, String flavorId, String keypair, Set<String> network, Set<String> secGroup, String userData) throws VimDriverException {
+        return launchInstanceAndWait(vimInstance,name,imageId,flavorId,keypair,network,secGroup,userData,false);
+    }
+    public Server launchInstanceAndWait(VimInstance vimInstance, String name, String imageId, String flavorId, String keypair, Set<String> network, Set<String> secGroup, String userData, boolean floatingIp) throws VimDriverException {
         boolean bootCompleted = false;
         Server server = launchInstance(vimInstance, name, imageId, flavorId, keypair, network, secGroup, userData);
+        if (floatingIp)
+            associateFloatingIp(vimInstance,server,listFreeFloatingIps().get(0));
         while (bootCompleted==false) {
             try {
                 Thread.sleep(1000);
@@ -859,6 +862,8 @@ public class OpenstackClient implements ClientInterfaces {
     private void associateFloatingIp(VimInstance vimInstance, Server server, String floatingIp) {
         org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(defaultZone).get();
         floatingIPApi.addToServer(floatingIp, server.getExtId());
+        log.info("Associated floatingIp " + floatingIp + " to server: " + server.getName());
+        server.setFloatingIp(floatingIp);
     }
 
     private void disassociateFloatingIp(Server server, String floatingIp) {
