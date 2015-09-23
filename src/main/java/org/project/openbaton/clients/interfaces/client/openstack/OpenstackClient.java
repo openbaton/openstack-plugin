@@ -166,8 +166,6 @@ public class OpenstackClient implements ClientInterfaces {
     public Server launchInstanceAndWait(VimInstance vimInstance, String name, String imageId, String flavorId, String keypair, Set<String> network, Set<String> secGroup, String userData, boolean floatingIp) throws VimDriverException {
         boolean bootCompleted = false;
         Server server = launchInstance(vimInstance, name, imageId, flavorId, keypair, network, secGroup, userData);
-        if (floatingIp)
-            associateFloatingIp(vimInstance,server,listFreeFloatingIps().get(0));
         while (bootCompleted==false) {
             try {
                 Thread.sleep(1000);
@@ -182,6 +180,8 @@ public class OpenstackClient implements ClientInterfaces {
                 throw new VimDriverException(server.getExtendedStatus());
             }
         }
+        if (floatingIp)
+            associateFloatingIp(vimInstance,server,listFreeFloatingIps().get(0));
         return server;
     }
 
