@@ -17,10 +17,7 @@
 package org.project.openbaton.vim_drivers.test;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.*;
 import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.collect.IterableWithMarkers;
 import org.jclouds.collect.PagedIterable;
@@ -332,6 +329,7 @@ public class OpenstackTest {
     @Test
     public void testSetZone() {
         openstackClient.setZone("");
+        openstackClient.setZone("mocked");
     }
 
     @Test
@@ -382,22 +380,6 @@ public class OpenstackTest {
         openstackClient.deleteServerByIdAndWait(vimInstance, "not_existing_server_ext_id");
     }
 
-//    @Test
-//    public void testGetServerById() {
-//        Server server = openstackClient.getServerById(definedServer.getExtId());
-//        assertEqualsServers(definedServer, server);
-//        exception.expect(NullPointerException.class);
-//        openstackClient.getServerById("not_existing_id");
-//    }
-
-//    @Test
-//    public void testGetServerIdByName() {
-//        String serverId = openstackClient.getServerIdByName(definedServer.getName());
-//        Assert.assertEquals(definedServer.getExtId(), serverId);
-//        exception.expect(NullPointerException.class);
-//        openstackClient.getServerIdByName("not_existing_name");
-//    }
-
     @Test
     public void testAddImage() {
         NFVImage image = openstackClient.addImage(vimInstance, definedImage, "mocked_inputstream".getBytes());
@@ -415,22 +397,6 @@ public class OpenstackTest {
         boolean isDeleted = openstackClient.deleteImage(vimInstance, definedImage);
         Assert.assertEquals(true, isDeleted);
     }
-
-//    @Test
-//    public void testGetImageById() {
-//        NFVImage image = openstackClient.getImageById(definedImage.getExtId());
-//        assertEqualsImages(definedImage, image);
-//        exception.expect(NullPointerException.class);
-//        openstackClient.getImageById("not_existing_id");
-//    }
-
-//    @Test
-//    public void testGetImageIdByName() {
-//        String imageId = openstackClient.getImageIdByName(definedImage.getName());
-//        Assert.assertEquals(definedImage.getExtId(), imageId);
-//        exception.expect(NullPointerException.class);
-//        openstackClient.getImageIdByName("not_existing_name");
-//    }
 
     @Ignore
     @Test
@@ -459,25 +425,11 @@ public class OpenstackTest {
         openstackClient.updateFlavor(vimInstance, new DeploymentFlavour());
     }
 
-//    @Test
-//    public void testGetFlavorIdByName() {
-//        String flavorId = openstackClient.getFlavorIdByName(definedFlavor.getFlavour_key());
-//        Assert.assertEquals(definedFlavor.getExtId(), flavorId);
-//        exception.expect(NullPointerException.class);
-//        openstackClient.getFlavorIdByName("not_existing_name");
-//    }
-
     @Test
     public void testListFlavors() {
         List<DeploymentFlavour> flavors = openstackClient.listFlavors(vimInstance);
         assertEqualsFlavors(definedFlavor, flavors.get(0));
     }
-
-//    @Test
-//    public void testGetFlavorById() {
-//        DeploymentFlavour flavor = openstackClient.getFlavorById(definedFlavor.getExtId());
-//        assertEqualsFlavors(definedFlavor, flavor);
-//    }
 
     @Test
     public void testCreateNetwork() {
@@ -543,68 +495,12 @@ public class OpenstackTest {
     public void testDeleteSubnet() {
         boolean isDeleted = openstackClient.deleteSubnet(vimInstance, definedSubnet.getExtId());
         Assert.assertEquals(true, isDeleted);
-
-//        isDeleted = openstackClient.deleteSubnet(vimInstance, definedSubnet);
-//        Assert.assertEquals(true, isDeleted);
     }
-
-//    @Test
-//    public void testGetSubnetById() {
-//        Subnet subnet = openstackClient.getSubnetById(vimInstance, definedSubnet.getExtId());
-//        assertEqualsSubnets(definedSubnet, subnet);
-//        exception.expect(NullPointerException.class);
-//        openstackClient.getSubnetById("not_existing_id");
-//    }
 
     @Test
     public void testListSubnets() {
 
     }
-
-//    @Test
-//    public void testListAllFloatingIps() {
-//        List<String> floatingIPs = openstackClient.listAllFloatingIps();
-//        if (floatingIPs.contains(expFreeFloatingIP.getIp()) && floatingIPs.contains(expUsedFloatingIP.getIp())) {
-//            Assert.assertTrue(true);
-//        } else {
-//            Assert.assertTrue(false);
-//        }
-//    }
-
-//    @Test
-//    public void testListAssociatedFloatingIps() {
-//        List<String> floatingIPs = openstackClient.listAssociatedFloatingIps();
-//        if (!floatingIPs.contains(expFreeFloatingIP.getIp()) && floatingIPs.contains(expUsedFloatingIP.getIp())) {
-//            Assert.assertTrue(true);
-//        } else {
-//            Assert.assertTrue(false);
-//        }
-//    }
-
-//    @Test
-//    public void testListFreeFloatingIps() {
-//        List<String> floatingIPs = openstackClient.listFreeFloatingIps();
-//        if (floatingIPs.contains(expFreeFloatingIP.getIp()) && !floatingIPs.contains(expUsedFloatingIP.getIp())) {
-//            Assert.assertTrue(true);
-//        } else {
-//            Assert.assertTrue(false);
-//        }
-//    }
-
-//    @Test
-//    public void testAssociateFloatingIpFromPool() {
-//        openstackClient.associateFloatingIpFromPool(definedServer, "mocked_pool");
-//    }
-
-//    @Test
-//    public void testAssociateFloatingIp() {
-//        openstackClient.associateFloatingIp(definedServer, "mocked_ip");
-//    }
-
-//    @Test
-//    public void testDisassociateFloatingIp() {
-//        openstackClient.disassociateFloatingIp(definedServer, "mocked_ip");
-//    }
 
     @Test
     public void testGetType() {
@@ -622,18 +518,6 @@ public class OpenstackTest {
     private VimInstance createVimInstance() {
         VimInstance vimInstance = new VimInstance();
         vimInstance.setName("mock_vim_instance");
-//        vimInstance.setTenant("mocked_tenant");
-//        vimInstance.setAuthUrl("mocked_url");
-//        vimInstance.setName("mocked_name");
-//        vimInstance.setPassword("mocked_password");
-//        vimInstance.setUsername("mocked_username");
-//        vimInstance.setLocation(new Location());
-//        vimInstance.setImages(new ArrayList<NFVImage>() {{
-//            NFVImage nfvImage = new NFVImage();
-//            nfvImage.setName("mocked_image_name");
-//            nfvImage.setExtId("mocked_image_extId");
-//            add(nfvImage);
-//        }});
         return vimInstance;
     }
 
@@ -712,20 +596,14 @@ public class OpenstackTest {
         Assert.assertEquals(expectedServer.getName(), actualServer.getName());
         Assert.assertEquals(expectedServer.getExtId(), actualServer.getExtId());
         Assert.assertEquals(expectedServer.getStatus(), actualServer.getStatus());
-        //Assert.assertEquals(expectedServer.getExtendedStatus(), actualServer.getExtendedStatus());
-        //Assert.assertEquals(expectedServer.getCreated(), actualServer.getCreated());
-        //Assert.assertEquals(expectedServer.getUpdated(), actualServer.getUpdated());
-        //Assert.assertEquals(expectedServer.getIp(), actualServer.getIp());
     }
 
     private void assertEqualsImages(NFVImage expectedImage, NFVImage actualImage) {
         Assert.assertEquals(expectedImage.getName(), actualImage.getName());
         Assert.assertEquals(expectedImage.getExtId(), actualImage.getExtId());
-        //Assert.assertEquals(expectedImage.getMinCPU(), actualImage.getMinCPU());
+        Assert.assertEquals(expectedImage.getMinCPU(), actualImage.getMinCPU());
         Assert.assertEquals(expectedImage.getMinDiskSpace(), actualImage.getMinDiskSpace());
         Assert.assertEquals(expectedImage.getMinRam(), actualImage.getMinRam());
-        //Assert.assertEquals(expectedImage.getCreated(), actualImage.getCreated());
-        //Assert.assertEquals(expectedImage.getUpdated(), actualImage.getUpdated());
     }
 
     private void assertEqualsFlavors(DeploymentFlavour expectedFlavor, DeploymentFlavour actualFlavor) {
@@ -735,8 +613,7 @@ public class OpenstackTest {
 
     private void assertEqualsNetworks(Network expectedNetwork, Network actualNetwork) {
         Assert.assertEquals(expectedNetwork.getName(), actualNetwork.getName());
-//        Assert.assertEquals(expectedNetwork.getExternal(), actualNetwork.getExternal());
-//        Assert.assertEquals(expectedNetwork.getShared(), actualNetwork.getShared());
+        Assert.assertEquals(expectedNetwork.getExternal(), actualNetwork.getExternal());
         Assert.assertEquals(expectedNetwork.getSubnets(), actualNetwork.getSubnets());
     }
 

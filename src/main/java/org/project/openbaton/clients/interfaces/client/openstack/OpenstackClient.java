@@ -137,26 +137,6 @@ public class OpenstackClient implements ClientInterfaces {
         }
     }
 
-    private void createKeyPair(VimInstance vimInstance, String name, String path) throws IOException {
-        KeyPairApi keypairApi = this.novaApi.getKeyPairApi(
-                this.defaultZone).get();
-        BufferedReader br = null;
-        try {
-            br = new BufferedReader(new FileReader(path));
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) {
-                sb.append(line);
-            }
-            line = sb.toString();
-            keypairApi.createWithPublicKey(name, line);
-        } catch (IOException e) {
-            System.out.println("ERROR::Given file path is not valid.");
-        } finally {
-            br.close();
-        }
-    }
-
     @Override
     public Server launchInstance(VimInstance vimInstance, String name, String imageId, String flavorId,
                                  String keypair, Set<String> network, Set<String> secGroup,
@@ -310,16 +290,6 @@ public class OpenstackClient implements ClientInterfaces {
         }
     }
 
-    private String getServerIdByName(String name) {
-        init(vimInstance);
-        ServerApi serverApi = this.novaApi.getServerApi(defaultZone);
-        for (Resource s : serverApi.list().concat()) {
-            if (s.getName().equalsIgnoreCase(name))
-                return s.getId();
-        }
-        throw new NullPointerException("Server with name: " + name + " not found.");
-    }
-
     @Override
     public NFVImage addImage(VimInstance vimInstance, NFVImage image, byte[] imageFile) {
         init(vimInstance);
@@ -464,15 +434,6 @@ public class OpenstackClient implements ClientInterfaces {
         }
     }
 
-    private String getImageIdByName(String name) {
-        ImageApi imageApi = this.glanceApi.getImageApi(this.defaultZone);
-        for (Resource i : imageApi.list().concat()) {
-            if (i.getName().equalsIgnoreCase(name))
-                return i.getId();
-        }
-        throw new NullPointerException("Image with name: " + name + " not found");
-    }
-
     @Override
     public DeploymentFlavour addFlavor(VimInstance vimInstance, DeploymentFlavour flavor) {
         init(vimInstance);
@@ -565,15 +526,6 @@ public class OpenstackClient implements ClientInterfaces {
         }
     }
 
-    private String getFlavorIdByName(String name) {
-        FlavorApi flavorApi = this.novaApi.getFlavorApi(this.defaultZone);
-        for (Resource f : flavorApi.list().concat()) {
-            if (f.getName().equalsIgnoreCase(name))
-                return f.getId();
-        }
-        throw new NullPointerException("Flavor with name: " + name + " not found.");
-    }
-
     @Override
     public List<DeploymentFlavour> listFlavors(VimInstance vimInstance) {
         init(vimInstance);
@@ -589,27 +541,6 @@ public class OpenstackClient implements ClientInterfaces {
             flavors.add(flavor);
         }
         return flavors;
-    }
-
-    private String getSecurityGroupById(String extId) {
-        SecurityGroupApi securityGroupApi = novaApi.getSecurityGroupApi(defaultZone).get();
-        try {
-            SecurityGroup securityGroup = securityGroupApi.get(extId);
-            return securityGroup.getId();
-        } catch (Exception e) {
-            throw new NullPointerException("Security Group with extId: " + extId + " not found.");
-        }
-    }
-
-    private String getSecurityGroupIdByName(String name) {
-        SecurityGroupApi securityGroupApi = novaApi.getSecurityGroupApi(defaultZone).get();
-        Iterator<? extends SecurityGroup> sgList = securityGroupApi.list().iterator();
-        while (sgList.hasNext()) {
-            SecurityGroup group = sgList.next();
-            if (group.getName().equalsIgnoreCase(name))
-                return group.getId();
-        }
-        throw new NullPointerException("Security Group with name: " + name + " not found.");
     }
 
     @Override
@@ -660,12 +591,6 @@ public class OpenstackClient implements ClientInterfaces {
         return network;
     }
 
-    private boolean deleteNetwork(Network network) {
-        NetworkApi networkApi = neutronApi.getNetworkApi(defaultZone);
-        boolean isDeleted = networkApi.delete(network.getExtId());
-        return isDeleted;
-    }
-
     @Override
     public boolean deleteNetwork(VimInstance vimInstance, String extId) {
         init(vimInstance);
@@ -690,15 +615,6 @@ public class OpenstackClient implements ClientInterfaces {
         } catch (Exception e) {
             throw new NullPointerException("Network not found");
         }
-    }
-
-    private String getNetworkIdByName(String name) {
-        NetworkApi networkApi = neutronApi.getNetworkApi(defaultZone);
-        for (org.jclouds.openstack.neutron.v2.domain.Network net : networkApi.list().concat()) {
-            if (net.getName().equalsIgnoreCase(name))
-                return net.getId();
-        }
-        throw new NullPointerException("Network not found");
     }
 
     @Override
@@ -776,70 +692,12 @@ public class OpenstackClient implements ClientInterfaces {
         return subnet;
     }
 
-    private boolean deleteSubnet(VimInstance vimInstance, Subnet subnet) {
-        return deleteSubnet(vimInstance, subnet.getExtId());
-    }
-
     @Override
     public boolean deleteSubnet(VimInstance vimInstance, String extId) {
         init(vimInstance);
         SubnetApi subnetApi = neutronApi.getSubnetApi(defaultZone);
         boolean isDeleted = subnetApi.delete(extId);
         return isDeleted;
-    }
-
-
-    private Subnet getSubnetById(String extId) {
-        SubnetApi subnetApi = neutronApi.getSubnetApi(defaultZone);
-        try {
-            org.jclouds.openstack.neutron.v2.domain.Subnet jcloudsSubnet = subnetApi.get(extId);
-            Subnet subnet = new Subnet();
-            subnet.setName(jcloudsSubnet.getName());
-            subnet.setExtId(jcloudsSubnet.getId());
-            subnet.setNetworkId(jcloudsSubnet.getNetworkId());
-            subnet.setCidr(jcloudsSubnet.getCidr());
-            return subnet;
-        } catch (Exception e) {
-            throw new NullPointerException("Subnet with extId: " + extId + " not found.");
-        }
-    }
-
-    private List<Subnet> listSubnets(VimInstance vimInstance) {
-        init(vimInstance);
-        List<Subnet> subnets = new ArrayList<Subnet>();
-        for (org.jclouds.openstack.neutron.v2.domain.Subnet net : this.neutronApi.getSubnetApi(defaultZone).list().concat()) {
-            Subnet subnet = new Subnet();
-            subnet.setName(net.getName());
-            subnet.setExtId(net.getId());
-            subnet.setNetworkId(net.getNetworkId());
-            subnet.setCidr(net.getCidr());
-            subnets.add(subnet);
-        }
-        return subnets;
-    }
-
-    private List<String> listAllFloatingIps() {
-        List<String> floatingIPs = new LinkedList<String>();
-        org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(defaultZone).get();
-        Iterator<FloatingIP> floatingIpIterator = floatingIPApi.list().iterator();
-        while (floatingIpIterator.hasNext()) {
-            FloatingIP floatingIP = floatingIpIterator.next();
-            floatingIPs.add(floatingIP.getIp());
-        }
-        return floatingIPs;
-    }
-
-    private List<String> listAssociatedFloatingIps() {
-        List<String> floatingIPs = new LinkedList<String>();
-        org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(defaultZone).get();
-        Iterator<FloatingIP> floatingIpIterator = floatingIPApi.list().iterator();
-        while (floatingIpIterator.hasNext()) {
-            FloatingIP floatingIP = floatingIpIterator.next();
-            if (floatingIP.getInstanceId() != null) {
-                floatingIPs.add(floatingIP.getIp());
-            }
-        }
-        return floatingIPs;
     }
 
     private List<String> listFreeFloatingIps() {
@@ -855,22 +713,11 @@ public class OpenstackClient implements ClientInterfaces {
         return floatingIPs;
     }
 
-    private void associateFloatingIpFromPool(VimInstance vimInstance, Server server, String pool) {
-        org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(defaultZone).get();
-        FloatingIP floatingIp = floatingIPApi.allocateFromPool(pool);
-        associateFloatingIp(vimInstance, server, floatingIp.getIp());
-    }
-
     private void associateFloatingIp(VimInstance vimInstance, Server server, String floatingIp) {
         org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(defaultZone).get();
         floatingIPApi.addToServer(floatingIp, server.getExtId());
         log.info("Associated floatingIp " + floatingIp + " to server: " + server.getName());
         server.setFloatingIp(floatingIp);
-    }
-
-    private void disassociateFloatingIp(Server server, String floatingIp) {
-        org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(defaultZone).get();
-        floatingIPApi.removeFromServer(floatingIp, server.getExtId());
     }
 
     @Override
@@ -934,16 +781,6 @@ public class OpenstackClient implements ClientInterfaces {
                 connection.disconnect();
             }
         }
-        //only for administrators
-        //QuotaApi quotaApi = novaApi.getQuotaApi(defaultZone).get();
-        //org.jclouds.openstack.nova.v2_0.domain.Quota jcloudsQuota = quotaApi.getByTenant(vimInstance.getTenant());
-        //Quota quota = new Quota();
-        //quota.setTenant(jcloudsQuota.getId());
-        //quota.setCores(jcloudsQuota.getCores());
-        //quota.setFloatingIps(jcloudsQuota.getFloatingIps());
-        //quota.setInstances(jcloudsQuota.getInstances());
-        //quota.setKeyPairs(jcloudsQuota.getKeyPairs());
-        //quota.setRam(jcloudsQuota.getRam());
         return quota;
     }
 
