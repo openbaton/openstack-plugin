@@ -149,8 +149,15 @@ public class OpenstackTest {
         }
     }
 
+    private class MyAddress extends Address {
+        protected MyAddress(String addr, int version) {
+            super(addr, version);
+        }
+    }
+
     private MyServer expServer;
     private MyServer faultyServer;
+    private MyServer errorServer;
     private MyResource expServerResource;
     private MyGlanceImage expImageResource;
     private MyResource expFlavorResource;
@@ -195,10 +202,20 @@ public class OpenstackTest {
         faultyImage = new MyNovaImage("not_existing_image_ext_id", definedImage.getName(), new HashSet<Link>(), new Date(), new Date(), "", "", Image.Status.ACTIVE, 1, (int) definedImage.getMinDiskSpace(), (int) definedImage.getMinRam(), new ArrayList<BlockDeviceMapping>(), expImageResource, new HashMap<String, String>());
         //Server and Resources
         ServerExtendedStatus extStatus = new MyExtendedStatus("mocked_id", "mocked_name", 0);
-        expServer = new MyServer(definedServer.getExtId(), definedServer.getName(), new HashSet<Link>(), definedServer.getExtId(), "", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.fromValue(definedServer.getStatus()), expImage, expFlavor, "", "", mock(Multimap.class), new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
-        faultyServer = new MyServer("faulty_server_mocked_ext_id", definedServer.getName(), new HashSet<Link>(), definedServer.getExtId(), "", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.fromValue(definedServer.getStatus()), faultyImage, faultyFlavor, "", "", mock(Multimap.class), new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
+        Map<String, Collection<Address>> addressMap = new HashMap<>();
+        Collection<Address> addresses = new HashSet<>();
+        addresses.add(new MyAddress("mocked_address", 4));
+        addressMap.put("network", addresses);
+        Multimap<String, Address> multimap = ArrayListMultimap.create();
+        for (String key : addressMap.keySet()) {
+            multimap.putAll(key, addressMap.get(key));
+        }
+        expServer = new MyServer(definedServer.getExtId(), definedServer.getName(), new HashSet<Link>(), definedServer.getExtId(), "", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.fromValue(definedServer.getStatus()), expImage, expFlavor, "", "", multimap , new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
+        faultyServer = new MyServer("faulty_server_mocked_ext_id", "faulty_server", new HashSet<Link>(), definedServer.getExtId(), "", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.ERROR, faultyImage, faultyFlavor, "", "", mock(Multimap.class), new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
+        errorServer = new MyServer("error_server_mocked_ext_id", "error_server", new HashSet<Link>(), definedServer.getExtId(), "", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.ERROR, expImage, expFlavor, "", "", mock(Multimap.class), new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
         ServerCreated serverCreated = mock(ServerCreated.class);
         ServerCreated faultyServerCreated = mock(ServerCreated.class);
+        ServerCreated errorServerCreated = mock(ServerCreated.class);
 
         //Resources
         expFlavorResource = new MyResource(definedFlavor.getExtId(), definedFlavor.getFlavour_key(), new HashSet<Link>());
@@ -244,14 +261,17 @@ public class OpenstackTest {
         when(serverApi.get(definedServer.getExtId())).thenReturn(expServer);
         when(serverApi.get("not_existing_server_ext_id")).thenThrow(new NullPointerException());
         when(serverApi.get("faulty_server_mocked_ext_id")).thenReturn(faultyServer);
+        when(serverApi.get("error_server_mocked_ext_id")).thenReturn(errorServer);
         when(serverApi.list()).thenReturn(mock(PagedIterable.class));
         when(serverApi.list().concat()).thenReturn(resServerFI);
         when(serverApi.listInDetail()).thenReturn(mock(PagedIterable.class));
         when(serverApi.listInDetail().concat()).thenReturn(serServerFI);
         when(serverCreated.getId()).thenReturn(definedServer.getExtId());
         when(faultyServerCreated.getId()).thenReturn("faulty_server_mocked_ext_id");
+        when(errorServerCreated.getId()).thenReturn("error_server_mocked_ext_id");
         when(serverApi.create(eq(definedServer.getName()), anyString(), anyString(), any(CreateServerOptions.class))).thenReturn(serverCreated);
         when(serverApi.create(eq("faulty_server"), anyString(), anyString(), any(CreateServerOptions.class))).thenReturn(faultyServerCreated);
+        when(serverApi.create(eq("error_server"), anyString(), anyString(), any(CreateServerOptions.class))).thenReturn(errorServerCreated);
 
         //ImageApi
         org.jclouds.openstack.nova.v2_0.features.ImageApi novaImageApi = mock(org.jclouds.openstack.nova.v2_0.features.ImageApi.class);
@@ -345,6 +365,8 @@ public class OpenstackTest {
     public void testLauchInstanceAndWait() throws VimDriverException {
         Server server = openstackClient.launchInstanceAndWait(vimInstance, definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata");
         assertEqualsServers(definedServer, server);
+        exception.expect(VimDriverException.class);
+        server = openstackClient.launchInstanceAndWait(vimInstance, "error_server", definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata");
     }
 
     @Test
