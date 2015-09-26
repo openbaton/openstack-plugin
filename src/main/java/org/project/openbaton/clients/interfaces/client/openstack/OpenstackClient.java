@@ -180,7 +180,7 @@ public class OpenstackClient implements ClientInterfaces {
                 throw new VimDriverException(server.getExtendedStatus());
             }
         }
-        if (floatingIp)
+        if (floatingIp && listFreeFloatingIps().size() > 0)
             associateFloatingIp(vimInstance,server,listFreeFloatingIps().get(0));
         return server;
     }
