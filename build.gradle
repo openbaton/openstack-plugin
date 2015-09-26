@@ -21,10 +21,9 @@ apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/git.release.gradle'
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
+apply plugin: 'jacoco'
 
 version = '0.5-SNAPSHOT'
-
-
 
 apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/command.line.helper.gradle'
 apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/git.helpers.gradle'
