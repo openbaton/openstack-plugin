@@ -29,7 +29,9 @@ import org.jclouds.openstack.glance.v1_0.domain.ImageDetails;
 import org.jclouds.openstack.glance.v1_0.features.ImageApi;
 import org.jclouds.openstack.glance.v1_0.options.CreateImageOptions;
 import org.jclouds.openstack.glance.v1_0.options.UpdateImageOptions;
+import org.jclouds.openstack.keystone.v2_0.KeystoneApi;
 import org.jclouds.openstack.neutron.v2.NeutronApi;
+import org.jclouds.openstack.neutron.v2.extensions.RouterApi;
 import org.jclouds.openstack.neutron.v2.features.NetworkApi;
 import org.jclouds.openstack.neutron.v2.features.SubnetApi;
 import org.jclouds.openstack.nova.v2_0.NovaApi;
@@ -193,6 +195,8 @@ public class OpenstackTest {
         //Glance Api
         GlanceApi glanceApi = mock(GlanceApi.class);
         openstackClient.setGlanceApi(glanceApi);
+        //TenantId
+        openstackClient.setTenantId("mocked_tenant_id");
 
         //Flavor
         expFlavor = new MyFlavor(definedFlavor.getExtId(), definedFlavor.getFlavour_key(), new HashSet<Link>(), 512, 1, 2, "", 1.1, 1);
@@ -319,6 +323,9 @@ public class OpenstackTest {
         when(network.getName()).thenReturn(definedNetwork.getName());
         when(network.getId()).thenReturn(definedNetwork.getExtId());
         when(network.getSubnets()).thenReturn(ImmutableSet.<String>of(definedSubnet.getExtId()));
+        RouterApi routerApi = mock(RouterApi.class);
+        when(neutronApi.getRouterApi(anyString())).thenReturn(mock(Optional.class));
+        when(neutronApi.getRouterApi(anyString()).get()).thenReturn(routerApi);
 
         //SubnetApi
         SubnetApi subnetApi = mock(SubnetApi.class);
