@@ -100,7 +100,7 @@ public class OpenstackClient implements ClientInterfaces {
     private NovaApi novaApi;
     private NeutronApi neutronApi;
     private GlanceApi glanceApi;
-    private KeystoneApi keystoneApi;
+    //private KeystoneApi keystoneApi;
 
     private String tenantId;
 
@@ -127,6 +127,8 @@ public class OpenstackClient implements ClientInterfaces {
         this.glanceApi = glanceApi;
     }
 
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
     public void init(VimInstance vimInstance) {
         Iterable<Module> modules = ImmutableSet.<Module>of(new SLF4JLoggingModule());
         Properties overrides = new Properties();
@@ -137,8 +139,9 @@ public class OpenstackClient implements ClientInterfaces {
         this.novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
         this.neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
         this.glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
-        this.keystoneApi = ContextBuilder.newBuilder("openstack-keystone").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(KeystoneApi.class);
-        this.tenantId = keystoneApi.getTenantApi().get().getByName(vimInstance.getTenant()).getId();
+        //this.keystoneApi = ContextBuilder.newBuilder("openstack-keystone").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(KeystoneApi.class);
+        //this.tenantId = keystoneApi.getTenantApi().get().getByName(vimInstance.getTenant()).getId();
+        this.tenantId = getTenantId(vimInstance);
         this.zones = novaApi.getConfiguredRegions();
         if (null == defaultZone) {
             this.defaultZone = zones.iterator().next();
@@ -815,6 +818,18 @@ public class OpenstackClient implements ClientInterfaces {
         floatingIPApi.addToServer(floatingIp, server.getExtId());
         log.info("Associated floatingIp " + floatingIp + " to server: " + server.getName());
         server.setFloatingIp(floatingIp);
+    }
+
+    public String getTenantId(VimInstance vimInstance) {
+        ContextBuilder contextBuilder = ContextBuilder.newBuilder("openstack-nova").credentials(vimInstance.getUsername(), vimInstance.getPassword()).endpoint(vimInstance.getAuthUrl());
+        ComputeServiceContext context = contextBuilder.buildView(ComputeServiceContext.class);
+        Function<Credentials, Access> auth = context.utils().injector().getInstance(Key.get(new TypeLiteral<Function<Credentials, Access>>() {
+        }));
+        //Get Access and all information
+        Access access = auth.apply(new Credentials.Builder<Credentials>().identity(vimInstance.getTenant() + ":" + vimInstance.getUsername()).credential(vimInstance.getPassword()).build());
+        //Get Tenant ID of user
+        String tenant_id = access.getToken().getTenant().get().getId();
+        return tenant_id;
     }
 
     @Override
