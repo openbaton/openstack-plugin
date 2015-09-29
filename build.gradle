@@ -13,6 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.bmuschko:gradle-nexus-plugin:2.3.1'
+    }
+}
 plugins {
     id 'net.researchgate.release' version '2.1.2'
 }
@@ -21,7 +29,7 @@ apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
 
-apply from: 'openbaton-libs/gradle/gradle/git.helpers.gradle'
+apply from: 'openbaton-libs/gradle/gradle/nexus.upload.plugin.gradle'
 apply from: 'openbaton-libs/gradle/gradle/command.line.helper.gradle'
 
 /**
@@ -42,19 +50,13 @@ project.ext {
     applicationVersion = version
     applicationVersionDebian = "1";
 
-    applicationRelease = isApplicationRelease()
-    applicationDate = new Date()
-    applicationRevision = getRevision()
-
-    applicationVersionSnapshot = (!applicationRelease) ? "+SNAPSHOT.${asUTC(applicationDate, 'yyyyMMdd')}.git${applicationRevision}" : ""
-    applicationVersionFull = "${applicationVersion}${applicationVersionSnapshot}"
     //------------------------------------------------//
     //------------------------------------------------//
     /**
      * gradle Related Vars
      */
     //------------------------------------------------//
-    mainClass = 'org.project.openbaton.plugin.main.spring.SpringPlugin'
+    mainClass = 'org.openbaton.plugin.main.spring.SpringPlugin'
 }
 
 apply from: 'openbaton-libs/gradle/gradle/application.java.gradle'
