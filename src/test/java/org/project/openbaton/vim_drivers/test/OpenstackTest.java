@@ -21,6 +21,7 @@ import com.google.common.collect.*;
 import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.collect.IterableWithMarkers;
 import org.jclouds.collect.PagedIterable;
+import org.jclouds.collect.PagedIterables;
 import org.jclouds.io.Payload;
 import org.jclouds.openstack.glance.v1_0.GlanceApi;
 import org.jclouds.openstack.glance.v1_0.domain.ContainerFormat;
@@ -29,11 +30,22 @@ import org.jclouds.openstack.glance.v1_0.domain.ImageDetails;
 import org.jclouds.openstack.glance.v1_0.features.ImageApi;
 import org.jclouds.openstack.glance.v1_0.options.CreateImageOptions;
 import org.jclouds.openstack.glance.v1_0.options.UpdateImageOptions;
+import org.jclouds.openstack.keystone.v2_0.KeystoneApi;
 import org.jclouds.openstack.neutron.v2.NeutronApi;
+import org.jclouds.openstack.neutron.v2.domain.*;
+import org.jclouds.openstack.neutron.v2.domain.ExternalGatewayInfo;
+import org.jclouds.openstack.neutron.v2.domain.IP;
+import org.jclouds.openstack.neutron.v2.domain.Port;
+import org.jclouds.openstack.neutron.v2.domain.Router;
+import org.jclouds.openstack.neutron.v2.domain.RouterInterface;
+import org.jclouds.openstack.neutron.v2.extensions.RouterApi;
 import org.jclouds.openstack.neutron.v2.features.NetworkApi;
+import org.jclouds.openstack.neutron.v2.features.PortApi;
 import org.jclouds.openstack.neutron.v2.features.SubnetApi;
+import org.jclouds.openstack.neutron.v2_0.domain.*;
 import org.jclouds.openstack.nova.v2_0.NovaApi;
 import org.jclouds.openstack.nova.v2_0.domain.*;
+import org.jclouds.openstack.nova.v2_0.domain.FloatingIP;
 import org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi;
 import org.jclouds.openstack.nova.v2_0.extensions.QuotaApi;
 import org.jclouds.openstack.nova.v2_0.features.FlavorApi;
@@ -42,6 +54,7 @@ import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jclouds.openstack.v2_0.domain.Link;
 import org.jclouds.openstack.v2_0.domain.Resource;
 import org.junit.*;
+import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.mockito.Matchers;
 import org.project.openbaton.catalogue.mano.common.DeploymentFlavour;
@@ -51,6 +64,7 @@ import org.project.openbaton.catalogue.nfvo.*;
 import org.project.openbaton.catalogue.nfvo.Network;
 import org.project.openbaton.catalogue.nfvo.Quota;
 import org.project.openbaton.catalogue.nfvo.Server;
+import org.project.openbaton.catalogue.nfvo.Subnet;
 import org.project.openbaton.clients.exceptions.VimDriverException;
 import org.project.openbaton.clients.interfaces.client.openstack.OpenstackClient;
 import org.springframework.test.context.TestExecutionListeners;
@@ -155,6 +169,18 @@ public class OpenstackTest {
         }
     }
 
+    private class MyPort extends Port {
+        protected MyPort(String id, NetworkStatus status, VIFType vifType, ImmutableMap<String, Object> vifDetails, String qosQueueId, String name, String networkId, Boolean adminStateUp, String macAddress, ImmutableSet<IP> fixedIps, String deviceId, String deviceOwner, String tenantId, ImmutableSet<String> securityGroups, ImmutableSet<AddressPair> allowedAddressPairs, ImmutableSet<ExtraDhcpOption> extraDhcpOptions, VNICType vnicType, String hostId, ImmutableMap<String, Object> profile, Boolean portSecurity, String profileId, Boolean macLearning, Integer qosRxtxFactor) {
+            super(id, status, vifType, vifDetails, qosQueueId, name, networkId, adminStateUp, macAddress, fixedIps, deviceId, deviceOwner, tenantId, securityGroups, allowedAddressPairs, extraDhcpOptions, vnicType, hostId, profile, portSecurity, profileId, macLearning, qosRxtxFactor);
+        }
+    }
+
+    private class MyExternalGatewayInfo extends org.jclouds.openstack.neutron.v2.domain.ExternalGatewayInfo {
+        protected MyExternalGatewayInfo(String networkId, Boolean enableSnat) {
+            super(networkId, enableSnat);
+        }
+    }
+
     private MyServer expServer;
     private MyServer faultyServer;
     private MyServer errorServer;
@@ -168,6 +194,7 @@ public class OpenstackTest {
     private MyFloatingIP expFreeFloatingIP;
     private MyFloatingIP expUsedFloatingIP;
     private MyQuota expQuota;
+    private MyPort expPort;
 
     @Before
     public void init() throws RemoteException {
@@ -193,6 +220,8 @@ public class OpenstackTest {
         //Glance Api
         GlanceApi glanceApi = mock(GlanceApi.class);
         openstackClient.setGlanceApi(glanceApi);
+        //TenantId
+        openstackClient.setTenantId("mocked_tenant_id");
 
         //Flavor
         expFlavor = new MyFlavor(definedFlavor.getExtId(), definedFlavor.getFlavour_key(), new HashSet<Link>(), 512, 1, 2, "", 1.1, 1);
@@ -210,12 +239,15 @@ public class OpenstackTest {
         for (String key : addressMap.keySet()) {
             multimap.putAll(key, addressMap.get(key));
         }
-        expServer = new MyServer(definedServer.getExtId(), definedServer.getName(), new HashSet<Link>(), definedServer.getExtId(), "", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.fromValue(definedServer.getStatus()), expImage, expFlavor, "", "", multimap , new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
+        expServer = new MyServer(definedServer.getExtId(), definedServer.getName(), new HashSet<Link>(), definedServer.getExtId(), "mocked_tenant_id", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.fromValue(definedServer.getStatus()), expImage, expFlavor, "", "", multimap , new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
         faultyServer = new MyServer("faulty_server_mocked_ext_id", "faulty_server", new HashSet<Link>(), definedServer.getExtId(), "", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.ERROR, faultyImage, faultyFlavor, "", "", mock(Multimap.class), new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
         errorServer = new MyServer("error_server_mocked_ext_id", "error_server", new HashSet<Link>(), definedServer.getExtId(), "", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.ERROR, expImage, expFlavor, "", "", mock(Multimap.class), new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
         ServerCreated serverCreated = mock(ServerCreated.class);
         ServerCreated faultyServerCreated = mock(ServerCreated.class);
         ServerCreated errorServerCreated = mock(ServerCreated.class);
+
+        //Port
+        expPort = new MyPort("mocked_port_ext_id", NetworkStatus.ACTIVE, VIFType._802_QBG, ImmutableMap.copyOf(new HashMap<String, Object>()), "mocked_qos_queue_id", "mocked_name", "mocked_network_ext_id", true, "mocked_mac_address", ImmutableSet.copyOf(new HashSet<IP>()), "mocked_device_id", "mocked_device_owner", "mocked_tenant_id", ImmutableSet.copyOf(new HashSet<String>()), ImmutableSet.copyOf(new HashSet<AddressPair>()), ImmutableSet.copyOf(new HashSet<ExtraDhcpOption>()), VNICType.NORMAL, "mocked_host_id", ImmutableMap.copyOf(new HashMap<String, Object>()), false, "mocked_profile_id", false, 0);
 
         //Resources
         expFlavorResource = new MyResource(definedFlavor.getExtId(), definedFlavor.getFlavour_key(), new HashSet<Link>());
@@ -278,9 +310,9 @@ public class OpenstackTest {
         when(novaImageApi.get(definedImage.getExtId())).thenReturn(expImage);
         ImageApi imageApi = mock(ImageApi.class);
         ImageDetails imageDetails = new MyImageDetails(definedImage.getExtId(), definedImage.getName(), new HashSet<Link>(), ContainerFormat.fromValue(definedImage.getContainerFormat()), DiskFormat.fromValue(definedImage.getDiskFormat()), new Long(1), "", definedImage.getMinDiskSpace(), definedImage.getMinRam(), "", "", definedImage.getUpdated(), definedImage.getCreated(), new Date(), org.jclouds.openstack.glance.v1_0.domain.Image.Status.ACTIVE, definedImage.isPublic(), new HashMap<String, String>());
-        Set<ImageDetails> imageSet = new HashSet<ImageDetails>();
-        imageSet.add(imageDetails);
-        ImmutableList<IterableWithMarker<ImageDetails>> imageILIWM = ImmutableList.of(IterableWithMarkers.from(imageSet));
+        List<ImageDetails> imageDetailsArray = new ArrayList<ImageDetails>();
+        imageDetailsArray.add(imageDetails);
+        FluentIterable<ImageDetails> imaImageFI = FluentIterable.from(imageDetailsArray);
         when(glanceApi.getImageApi(anyString())).thenReturn(imageApi);
         when(imageApi.get(definedImage.getExtId())).thenReturn(imageDetails);
         when(imageApi.get("not_existing_image_ext_id")).thenThrow(new NullPointerException());
@@ -292,6 +324,10 @@ public class OpenstackTest {
         when(imageApi.create(anyString(), any(Payload.class), any(CreateImageOptions.class))).thenReturn(imageDetails);
         when(imageApi.update(anyString(), any(UpdateImageOptions.class))).thenReturn(imageDetails);
         when(imageApi.delete(anyString())).thenReturn(true);
+
+        when(imageApi.listInDetail()).thenReturn(mock(PagedIterable.class));
+        when(imageApi.listInDetail().concat()).thenReturn(imaImageFI);
+
 
         //FlavorApi
         FlavorApi flavorApi = mock(FlavorApi.class);
@@ -308,17 +344,59 @@ public class OpenstackTest {
         NetworkApi networkApi = mock(NetworkApi.class);
         when(neutronApi.getNetworkApi(anyString())).thenReturn(networkApi);
         final org.jclouds.openstack.neutron.v2.domain.Network network = mock(org.jclouds.openstack.neutron.v2.domain.Network.class);
+        final org.jclouds.openstack.neutron.v2.domain.Network otherNetwork = mock(org.jclouds.openstack.neutron.v2.domain.Network.class);
+        final org.jclouds.openstack.neutron.v2.domain.Network publicNetwork = mock(org.jclouds.openstack.neutron.v2.domain.Network.class);
         when(networkApi.create(any(org.jclouds.openstack.neutron.v2.domain.Network.CreateNetwork.class))).thenReturn(network);
         when(networkApi.update(anyString(), any(org.jclouds.openstack.neutron.v2.domain.Network.UpdateNetwork.class))).thenReturn((network));
         when(networkApi.delete(anyString())).thenReturn(true);
         when(networkApi.get(definedNetwork.getExtId())).thenReturn(network);
+        when(networkApi.get("mocked_public_network_id")).thenReturn(publicNetwork);
         when(networkApi.list()).thenReturn(mock(PagedIterable.class));
         when(networkApi.list().concat()).thenReturn(FluentIterable.from(new ArrayList<org.jclouds.openstack.neutron.v2.domain.Network>() {{
             add(network);
+            add(otherNetwork);
+            add(publicNetwork);
         }}));
         when(network.getName()).thenReturn(definedNetwork.getName());
         when(network.getId()).thenReturn(definedNetwork.getExtId());
         when(network.getSubnets()).thenReturn(ImmutableSet.<String>of(definedSubnet.getExtId()));
+        when(network.getTenantId()).thenReturn("mocked_tenant_id");
+        when(network.getExternal()).thenReturn(false);
+        when(network.getShared()).thenReturn(false);
+        when(publicNetwork.getName()).thenReturn("mocked_public_network_name");
+        when(publicNetwork.getId()).thenReturn("mocked_public_network_id");
+        when(publicNetwork.getSubnets()).thenReturn(ImmutableSet.<String>of(definedSubnet.getExtId()));
+        when(publicNetwork.getTenantId()).thenReturn("mocked_tenant_id");
+        when(publicNetwork.getExternal()).thenReturn(true);
+        when(publicNetwork.getShared()).thenReturn(false);
+        when(otherNetwork.getTenantId()).thenReturn("mocked_other_tenant_id");
+
+        //RouterApi
+        RouterApi routerApi = mock(RouterApi.class);
+        when(neutronApi.getRouterApi(anyString())).thenReturn(mock(Optional.class));
+        when(neutronApi.getRouterApi(anyString()).get()).thenReturn(routerApi);
+
+        Set<Router> routerSet = new HashSet<Router>();
+        Router router = mock(Router.class);
+        routerSet.add(router);
+        when(routerApi.list()).thenReturn(PagedIterables.onlyPage(IterableWithMarkers.from(routerSet)));
+        when(router.getTenantId()).thenReturn("mocked_tenant_id");
+        ExternalGatewayInfo externalGatewayInfo = mock(ExternalGatewayInfo.class);
+        when(router.getExternalGatewayInfo()).thenReturn(externalGatewayInfo);
+        when(externalGatewayInfo.getNetworkId()).thenReturn("mocked_network_ext_id");
+        when(router.getId()).thenReturn("mocked_router_ext_id");
+        Router.CreateRouter options = mock(Router.CreateRouter.class);
+        Router.CreateBuilder createBuilder = mock(Router.CreateBuilder.class);
+        when(routerApi.create(any(Router.CreateRouter.class))).thenReturn(router);
+        when(router.getId()).thenReturn("mocked_router_ext_id");
+        RouterInterface routerInterface = mock(RouterInterface.class);
+        when(routerApi.addInterfaceForPort(anyString(), anyString())).thenReturn(routerInterface);
+        when(routerInterface.getSubnetId()).thenReturn("mocked_subnet_ext_id");
+
+        //PortApi
+        PortApi portApi = mock(PortApi.class);
+        when(neutronApi.getPortApi(anyString())).thenReturn(portApi);
+        when(portApi.create(any(Port.CreatePort.class))).thenReturn(expPort);
 
         //SubnetApi
         SubnetApi subnetApi = mock(SubnetApi.class);
@@ -420,7 +498,6 @@ public class OpenstackTest {
         Assert.assertEquals(true, isDeleted);
     }
 
-    @Ignore
     @Test
     public void testListImages() {
         List<NFVImage> images = openstackClient.listImages(vimInstance);

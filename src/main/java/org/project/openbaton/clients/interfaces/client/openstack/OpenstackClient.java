@@ -17,6 +17,7 @@
 package org.project.openbaton.clients.interfaces.client.openstack;
 
 import com.google.common.base.Function;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -26,6 +27,7 @@ import com.google.inject.TypeLiteral;
 import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
 import org.jclouds.collect.IterableWithMarker;
+import org.jclouds.collect.PagedIterable;
 import org.jclouds.compute.ComputeServiceContext;
 import org.jclouds.domain.Credentials;
 import org.jclouds.io.Payload;
@@ -39,30 +41,40 @@ import org.jclouds.openstack.glance.v1_0.domain.ImageDetails;
 import org.jclouds.openstack.glance.v1_0.features.ImageApi;
 import org.jclouds.openstack.glance.v1_0.options.CreateImageOptions;
 import org.jclouds.openstack.glance.v1_0.options.UpdateImageOptions;
+import org.jclouds.openstack.keystone.v2_0.KeystoneApi;
 import org.jclouds.openstack.keystone.v2_0.config.CredentialTypes;
 import org.jclouds.openstack.keystone.v2_0.config.KeystoneProperties;
 import org.jclouds.openstack.keystone.v2_0.domain.Access;
 import org.jclouds.openstack.keystone.v2_0.domain.Endpoint;
 import org.jclouds.openstack.neutron.v2.NeutronApi;
+import org.jclouds.openstack.neutron.v2.domain.*;
 import org.jclouds.openstack.neutron.v2.domain.Network.CreateNetwork;
 import org.jclouds.openstack.neutron.v2.domain.Network.UpdateNetwork;
 import org.jclouds.openstack.neutron.v2.domain.Subnet.CreateSubnet;
 import org.jclouds.openstack.neutron.v2.domain.Subnet.UpdateSubnet;
+import org.jclouds.openstack.neutron.v2.extensions.RouterApi;
 import org.jclouds.openstack.neutron.v2.features.NetworkApi;
+import org.jclouds.openstack.neutron.v2.features.PortApi;
 import org.jclouds.openstack.neutron.v2.features.SubnetApi;
 import org.jclouds.openstack.nova.v2_0.NovaApi;
 import org.jclouds.openstack.nova.v2_0.domain.Address;
 import org.jclouds.openstack.nova.v2_0.domain.FloatingIP;
 import org.jclouds.openstack.nova.v2_0.domain.RebootType;
+import org.jclouds.openstack.nova.v2_0.domain.SecurityGroup;
+import org.jclouds.openstack.nova.v2_0.extensions.KeyPairApi;
+import org.jclouds.openstack.nova.v2_0.extensions.SecurityGroupApi;
 import org.jclouds.openstack.nova.v2_0.features.FlavorApi;
 import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
+import org.jclouds.openstack.v2_0.domain.Resource;
 import org.jclouds.scriptbuilder.ScriptBuilder;
 import org.jclouds.scriptbuilder.domain.OsFamily;
-import org.openbaton.catalogue.mano.common.DeploymentFlavour;
-import org.openbaton.catalogue.nfvo.*;
-import org.openbaton.vim.drivers.exceptions.VimDriverException;
-import org.openbaton.vim.drivers.interfaces.ClientInterfaces;
+import org.project.openbaton.catalogue.mano.common.DeploymentFlavour;
+import org.project.openbaton.catalogue.nfvo.*;
+import org.project.openbaton.catalogue.nfvo.Network;
+import org.project.openbaton.catalogue.nfvo.Subnet;
+import org.project.openbaton.clients.exceptions.VimDriverException;
+import org.project.openbaton.clients.interfaces.ClientInterfaces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,6 +100,10 @@ public class OpenstackClient implements ClientInterfaces {
     private NovaApi novaApi;
     private NeutronApi neutronApi;
     private GlanceApi glanceApi;
+    //private KeystoneApi keystoneApi;
+
+    private String tenantId;
+
 
     private Set<String> zones;
     private String defaultZone = null;
@@ -111,6 +127,8 @@ public class OpenstackClient implements ClientInterfaces {
         this.glanceApi = glanceApi;
     }
 
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
     public void init(VimInstance vimInstance) {
         Iterable<Module> modules = ImmutableSet.<Module>of(new SLF4JLoggingModule());
         Properties overrides = new Properties();
@@ -121,6 +139,9 @@ public class OpenstackClient implements ClientInterfaces {
         this.novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
         this.neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
         this.glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
+        //this.keystoneApi = ContextBuilder.newBuilder("openstack-keystone").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(KeystoneApi.class);
+        //this.tenantId = keystoneApi.getTenantApi().get().getByName(vimInstance.getTenant()).getId();
+        this.tenantId = getTenantId(vimInstance);
         this.zones = novaApi.getConfiguredRegions();
         if (null == defaultZone) {
             this.defaultZone = zones.iterator().next();
@@ -146,7 +167,6 @@ public class OpenstackClient implements ClientInterfaces {
         return server;
     }
 
-    @Override
     public Server launchInstanceAndWait(VimInstance vimInstance, String name, String imageId, String flavorId, String keypair, Set<String> network, Set<String> secGroup, String userData) throws VimDriverException {
         return launchInstanceAndWait(vimInstance, name, imageId, flavorId, keypair, network, secGroup, userData, false);
     }
@@ -169,8 +189,12 @@ public class OpenstackClient implements ClientInterfaces {
                 throw new VimDriverException(server.getExtendedStatus());
             }
         }
-        if (floatingIp && listFreeFloatingIps().size() > 0)
-            associateFloatingIp(vimInstance,server,listFreeFloatingIps().get(0));
+        if (floatingIp)
+            if (listFreeFloatingIps().size() > 0) {
+                associateFloatingIp(vimInstance, server, listFreeFloatingIps().get(0));
+            } else {
+                log.error("Cannot assign FloatingIPs to server " + server.getId() + " . No FloatingIPs left...");
+            }
         return server;
     }
 
@@ -210,20 +234,18 @@ public class OpenstackClient implements ClientInterfaces {
         init(vimInstance);
         ImageApi imageApi = this.glanceApi.getImageApi(defaultZone);
         List<NFVImage> images = new ArrayList<NFVImage>();
-        for (IterableWithMarker<ImageDetails> jcloudsImage : imageApi.listInDetail().toList()) {
-            for (int i = 0; i < jcloudsImage.size(); i++) {
-                NFVImage image = new NFVImage();
-                image.setName(jcloudsImage.get(i).getName());
-                image.setExtId(jcloudsImage.get(i).getId());
-                image.setMinRam(jcloudsImage.get(i).getMinRam());
-                image.setMinDiskSpace(jcloudsImage.get(i).getMinDisk());
-                image.setCreated(jcloudsImage.get(i).getCreatedAt());
-                image.setUpdated(jcloudsImage.get(i).getUpdatedAt());
-                image.setIsPublic(jcloudsImage.get(i).isPublic());
-                image.setDiskFormat(jcloudsImage.get(i).getDiskFormat().toString().toUpperCase());
-                image.setContainerFormat(jcloudsImage.get(i).getContainerFormat().toString().toUpperCase());
-                images.add(image);
-            }
+        for (ImageDetails jcloudsImage : imageApi.listInDetail().concat()) {
+            NFVImage image = new NFVImage();
+            image.setName(jcloudsImage.getName());
+            image.setExtId(jcloudsImage.getId());
+            image.setMinRam(jcloudsImage.getMinRam());
+            image.setMinDiskSpace(jcloudsImage.getMinDisk());
+            image.setCreated(jcloudsImage.getCreatedAt());
+            image.setUpdated(jcloudsImage.getUpdatedAt());
+            image.setIsPublic(jcloudsImage.isPublic());
+            image.setDiskFormat(jcloudsImage.getDiskFormat().toString().toUpperCase());
+            image.setContainerFormat(jcloudsImage.getContainerFormat().toString().toUpperCase());
+            images.add(image);
         }
         return images;
     }
@@ -234,25 +256,27 @@ public class OpenstackClient implements ClientInterfaces {
         List<Server> servers = new ArrayList<Server>();
         ServerApi serverApi = this.novaApi.getServerApi(defaultZone);
         for (org.jclouds.openstack.nova.v2_0.domain.Server jcloudsServer : serverApi.listInDetail().concat()) {
-            Server server = new Server();
-            server.setExtId(jcloudsServer.getId());
-            server.setName(jcloudsServer.getName());
-            server.setStatus(jcloudsServer.getStatus().value());
-            server.setExtendedStatus(jcloudsServer.getExtendedStatus().toString());
-            HashMap<String, List<String>> ipMap = new HashMap<String, List<String>>();
-            for (String key : jcloudsServer.getAddresses().keys()) {
-                List<String> ips = new ArrayList<String>();
-                for (Address address : jcloudsServer.getAddresses().get(key)) {
-                    ips.add(address.getAddr());
+            if (jcloudsServer.getTenantId().equals(this.tenantId)) {
+                Server server = new Server();
+                server.setExtId(jcloudsServer.getId());
+                server.setName(jcloudsServer.getName());
+                server.setStatus(jcloudsServer.getStatus().value());
+                server.setExtendedStatus(jcloudsServer.getExtendedStatus().toString());
+                HashMap<String, List<String>> ipMap = new HashMap<String, List<String>>();
+                for (String key : jcloudsServer.getAddresses().keys()) {
+                    List<String> ips = new ArrayList<String>();
+                    for (Address address : jcloudsServer.getAddresses().get(key)) {
+                        ips.add(address.getAddr());
+                    }
+                    ipMap.put(key, ips);
                 }
-                ipMap.put(key, ips);
+                server.setIps(ipMap);
+                server.setCreated(jcloudsServer.getCreated());
+                server.setUpdated(jcloudsServer.getUpdated());
+                server.setImage(getImageById(jcloudsServer.getImage().getId()));
+                server.setFlavor(getFlavorById(jcloudsServer.getFlavor().getId()));
+                servers.add(server);
             }
-            server.setIps(ipMap);
-            server.setCreated(jcloudsServer.getCreated());
-            server.setUpdated(jcloudsServer.getUpdated());
-            server.setImage(getImageById(jcloudsServer.getImage().getId()));
-            server.setFlavor(getFlavorById(jcloudsServer.getFlavor().getId()));
-            servers.add(server);
         }
         return servers;
     }
@@ -633,13 +657,15 @@ public class OpenstackClient implements ClientInterfaces {
         init(vimInstance);
         List<Network> networks = new ArrayList<Network>();
         for (org.jclouds.openstack.neutron.v2.domain.Network jcloudsNetwork : this.neutronApi.getNetworkApi(defaultZone).list().concat()) {
-            log.trace("OpenstackNetwork: " + jcloudsNetwork.toString());
-            Network network = new Network();
-            network.setName(jcloudsNetwork.getName());
-            network.setExtId(jcloudsNetwork.getId());
-            network.setExternal(jcloudsNetwork.getExternal());
-            network.setShared(jcloudsNetwork.getShared());
-            networks.add(network);
+            if (jcloudsNetwork.getTenantId().equals(this.tenantId)) {
+                log.trace("OpenstackNetwork: " + jcloudsNetwork.toString());
+                Network network = new Network();
+                network.setName(jcloudsNetwork.getName());
+                network.setExtId(jcloudsNetwork.getId());
+                network.setExternal(jcloudsNetwork.getExternal());
+                network.setShared(jcloudsNetwork.getShared());
+                networks.add(network);
+            }
         }
         return networks;
     }
@@ -662,6 +688,16 @@ public class OpenstackClient implements ClientInterfaces {
         subnet.setExtId(jcloudsSubnet.getId());
         subnet.setName(jcloudsSubnet.getName());
         subnet.setCidr(jcloudsSubnet.getCidr());
+        String routerId = getRouter(vimInstance);
+        if (routerId == null) {
+            log.debug("Not found Router");
+            routerId = createRouter(vimInstance);
+        }
+        //attachInterface(vimInstance, routerId, subnet.getExtId());
+        if (routerId != null) {
+            String portId = createPort(vimInstance, network, subnet);
+            attachPort(vimInstance, routerId, portId);
+        }
         return subnet;
     }
 
@@ -687,6 +723,71 @@ public class OpenstackClient implements ClientInterfaces {
         subnet.setName(jcloudsSubnet.getName());
         subnet.setCidr(jcloudsSubnet.getCidr());
         return subnet;
+    }
+
+    private String getRouter(VimInstance vimInstance) {
+        log.debug("Getting existing Router to associate with new Subnet");
+        init(vimInstance);
+        RouterApi routerApi = neutronApi.getRouterApi(defaultZone).get();
+        PagedIterable routerList = routerApi.list();
+        if (routerList.iterator().hasNext()) {
+            for (Router router : (FluentIterable<Router>) routerList.concat())
+                if (router.getTenantId().equals(this.tenantId)) {
+                    ExternalGatewayInfo externalGatewayInfo = router.getExternalGatewayInfo();
+                    if (externalGatewayInfo != null) {
+                        String networkId = externalGatewayInfo.getNetworkId();
+                        if (getNetworkById(vimInstance, networkId).isExternal()) {
+                            return router.getId();
+                        }
+                    }
+                }
+        }
+        return null;
+    }
+
+    private String createRouter(VimInstance vimInstance) {
+        log.debug("Creating a new Router");
+        init(vimInstance);
+        RouterApi routerApi = neutronApi.getRouterApi(defaultZone).get();
+        //Find external network
+        String externalNetId = null;
+        for (Network network : listNetworks(vimInstance)) {
+            if (network.isExternal()) {
+                externalNetId = network.getExtId();
+            }
+        }
+        if (externalNetId == null) {
+            log.error("Not found external network for creating the router");
+            return null;
+        }
+        ExternalGatewayInfo externalGatewayInfo = ExternalGatewayInfo.builder().networkId(externalNetId).build();
+        Router.CreateRouter options = Router.CreateRouter.createBuilder().name(vimInstance.getTenant() + "_" + (int)(Math.random() * 1000) + "_router").adminStateUp(true).externalGatewayInfo(externalGatewayInfo).build();
+        Router router = routerApi.create(options);
+        return router.getId();
+    }
+
+    private String attachInterface(VimInstance vimInstance, String routerId, String subnetId) {
+        init(vimInstance);
+        log.debug("Associating Subnet to Router");
+        RouterApi routerApi = neutronApi.getRouterApi(defaultZone).get();
+        RouterInterface routerInterface = routerApi.addInterfaceForSubnet(routerId, subnetId);
+        return routerInterface.getSubnetId();
+    }
+
+    private String attachPort(VimInstance vimInstance, String routerId, String portId) {
+        init(vimInstance);
+        log.debug("Associating Subnet to Router");
+        RouterApi routerApi = neutronApi.getRouterApi(defaultZone).get();
+        RouterInterface routerInterface = routerApi.addInterfaceForPort(routerId, portId);
+        return routerInterface.getSubnetId();
+    }
+
+    private String createPort(VimInstance vimInstance, Network network, Subnet subnet) {
+        log.debug("Associating Subnet to Router");
+        PortApi portApi = neutronApi.getPortApi(defaultZone);
+        Port.CreatePort createPort = Port.createBuilder(network.getExtId()).name("Port_" + network.getName() + "_" + (int) (Math.random() * 1000)).fixedIps(ImmutableSet.<IP>of(IP.builder().subnetId(subnet.getExtId()).build())).build();
+        Port port = portApi.create(createPort);
+        return port.getId();
     }
 
     @Override
@@ -715,6 +816,18 @@ public class OpenstackClient implements ClientInterfaces {
         floatingIPApi.addToServer(floatingIp, server.getExtId());
         log.info("Associated floatingIp " + floatingIp + " to server: " + server.getName());
         server.setFloatingIp(floatingIp);
+    }
+
+    public String getTenantId(VimInstance vimInstance) {
+        ContextBuilder contextBuilder = ContextBuilder.newBuilder("openstack-nova").credentials(vimInstance.getUsername(), vimInstance.getPassword()).endpoint(vimInstance.getAuthUrl());
+        ComputeServiceContext context = contextBuilder.buildView(ComputeServiceContext.class);
+        Function<Credentials, Access> auth = context.utils().injector().getInstance(Key.get(new TypeLiteral<Function<Credentials, Access>>() {
+        }));
+        //Get Access and all information
+        Access access = auth.apply(new Credentials.Builder<Credentials>().identity(vimInstance.getTenant() + ":" + vimInstance.getUsername()).credential(vimInstance.getPassword()).build());
+        //Get Tenant ID of user
+        String tenant_id = access.getToken().getTenant().get().getId();
+        return tenant_id;
     }
 
     @Override
