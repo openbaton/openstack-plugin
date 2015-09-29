@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.openbaton.vim_impl.vim.test;
+package org.openbaton.nfvo.vim.test;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
@@ -22,13 +22,13 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.openbaton.catalogue.nfvo.*;
-import org.openbaton.vim_impl.vim.OpenstackVIM;
+import org.openbaton.nfvo.vim.OpenstackVIM;
 import org.openbaton.catalogue.mano.common.DeploymentFlavour;
 import org.openbaton.catalogue.mano.common.VNFDeploymentFlavour;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
 import org.openbaton.catalogue.mano.record.Status;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
+import org.openbaton.catalogue.nfvo.*;
 import org.openbaton.exceptions.VimException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;

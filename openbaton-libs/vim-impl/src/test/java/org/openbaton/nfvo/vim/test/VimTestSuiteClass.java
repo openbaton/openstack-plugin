@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.openbaton.vim_impl.vim.test;
+package org.openbaton.nfvo.vim.test;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
@@ -22,6 +22,10 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.openbaton.nfvo.vim.AmazonVIM;
+import org.openbaton.nfvo.vim.OpenstackVIM;
+import org.openbaton.nfvo.vim.TestVIM;
+import org.openbaton.nfvo.vim_interfaces.vim.VimBroker;
 import org.openbaton.catalogue.mano.common.DeploymentFlavour;
 import org.openbaton.catalogue.mano.common.VNFDeploymentFlavour;
 import org.openbaton.catalogue.mano.descriptor.VNFComponent;
@@ -32,14 +36,10 @@ import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.NFVImage;
 import org.openbaton.catalogue.nfvo.Server;
 import org.openbaton.catalogue.nfvo.VimInstance;
-import org.openbaton.vim.drivers.exceptions.VimDriverException;
-import org.openbaton.vim.drivers.interfaces.ClientInterfaces;
+import org.openbaton.clients.exceptions.VimDriverException;
+import org.openbaton.clients.interfaces.ClientInterfaces;
 import org.openbaton.exceptions.VimException;
-import org.openbaton.vim_impl.vim.AmazonVIM;
-import org.openbaton.vim_impl.vim.OpenstackVIM;
-import org.openbaton.vim_impl.vim.TestVIM;
 import org.openbaton.nfvo.vim_interfaces.vim.Vim;
-import org.openbaton.nfvo.vim_interfaces.vim.VimBroker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
