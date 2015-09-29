@@ -15,7 +15,6 @@
 
 package org.project.openbaton.catalogue.nfvo.messages;
 
-import org.project.openbaton.catalogue.mano.record.VNFRecordDependency;
 import org.project.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.project.openbaton.catalogue.nfvo.Action;
 import org.project.openbaton.catalogue.nfvo.messages.Interfaces.OrVnfmMessage;
@@ -23,24 +22,28 @@ import org.project.openbaton.catalogue.nfvo.messages.Interfaces.OrVnfmMessage;
 /**
  * Created by mob on 14.09.15.
  */
-public class OrVnfmGenericMessage extends OrVnfmMessage {
+public class OrVnfmErrorMessage extends OrVnfmMessage {
+
     private VirtualNetworkFunctionRecord vnfr;
-    private VNFRecordDependency vnfrd;
+    private String message;
 
-    public OrVnfmGenericMessage() {
+    public OrVnfmErrorMessage() {
+        this.action = Action.ERROR;
     }
 
-    public OrVnfmGenericMessage(VirtualNetworkFunctionRecord vnfr, Action action) {
+    public OrVnfmErrorMessage(VirtualNetworkFunctionRecord vnfr, String message) {
         this.vnfr = vnfr;
-        this.action = action;
+        this.message = message;
+        this.action = Action.ERROR;
     }
 
-    public VNFRecordDependency getVnfrd() {
-        return vnfrd;
+
+    public String getMessage() {
+        return message;
     }
 
-    public void setVnfrd(VNFRecordDependency vnfrd) {
-        this.vnfrd = vnfrd;
+    public void setMessage(String message) {
+        this.message = message;
     }
 
     public VirtualNetworkFunctionRecord getVnfr() {
@@ -53,10 +56,10 @@ public class OrVnfmGenericMessage extends OrVnfmMessage {
 
     @Override
     public String toString() {
-        return "OrVnfmGenericMessage{" +
-                "action=" + action +
+        return "OrVnfmErrorMessage{" +
+                "action='" + Action.ERROR+ '\'' +
+                "message='" + message + '\'' +
                 ", vnfr=" + vnfr +
-                ", vnfrd=" + vnfrd +
                 '}';
     }
 }
