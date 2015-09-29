@@ -16,7 +16,7 @@
 
 package org.project.openbaton.clients.interfaces.client.openstack;
 
-import org.project.openbaton.plugin.PluginStarter;
+import org.openbaton.plugin.PluginStarter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
