@@ -1,6 +1,6 @@
 package org.openbaton.plugin;
 
-import org.project.openbaton.clients.interfaces.ClientInterfaces;
+import org.openbaton.vim.drivers.interfaces.ClientInterfaces;
 import org.openbaton.plugin.utils.StartupPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
