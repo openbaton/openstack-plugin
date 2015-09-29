@@ -234,20 +234,18 @@ public class OpenstackClient implements ClientInterfaces {
         init(vimInstance);
         ImageApi imageApi = this.glanceApi.getImageApi(defaultZone);
         List<NFVImage> images = new ArrayList<NFVImage>();
-        for (IterableWithMarker<ImageDetails> jcloudsImage : imageApi.listInDetail().toList()) {
-            for (int i = 0; i < jcloudsImage.size(); i++) {
-                NFVImage image = new NFVImage();
-                image.setName(jcloudsImage.get(i).getName());
-                image.setExtId(jcloudsImage.get(i).getId());
-                image.setMinRam(jcloudsImage.get(i).getMinRam());
-                image.setMinDiskSpace(jcloudsImage.get(i).getMinDisk());
-                image.setCreated(jcloudsImage.get(i).getCreatedAt());
-                image.setUpdated(jcloudsImage.get(i).getUpdatedAt());
-                image.setIsPublic(jcloudsImage.get(i).isPublic());
-                image.setDiskFormat(jcloudsImage.get(i).getDiskFormat().toString().toUpperCase());
-                image.setContainerFormat(jcloudsImage.get(i).getContainerFormat().toString().toUpperCase());
-                images.add(image);
-            }
+        for (ImageDetails jcloudsImage : imageApi.listInDetail().concat()) {
+            NFVImage image = new NFVImage();
+            image.setName(jcloudsImage.getName());
+            image.setExtId(jcloudsImage.getId());
+            image.setMinRam(jcloudsImage.getMinRam());
+            image.setMinDiskSpace(jcloudsImage.getMinDisk());
+            image.setCreated(jcloudsImage.getCreatedAt());
+            image.setUpdated(jcloudsImage.getUpdatedAt());
+            image.setIsPublic(jcloudsImage.isPublic());
+            image.setDiskFormat(jcloudsImage.getDiskFormat().toString().toUpperCase());
+            image.setContainerFormat(jcloudsImage.getContainerFormat().toString().toUpperCase());
+            images.add(image);
         }
         return images;
     }
