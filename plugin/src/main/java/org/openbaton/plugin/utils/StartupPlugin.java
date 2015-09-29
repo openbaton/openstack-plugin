@@ -1,4 +1,4 @@
-package org.project.openbaton.plugin.utils;
+package org.openbaton.plugin.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
