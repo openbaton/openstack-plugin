@@ -66,7 +66,7 @@ import org.project.openbaton.catalogue.nfvo.Quota;
 import org.project.openbaton.catalogue.nfvo.Server;
 import org.project.openbaton.catalogue.nfvo.Subnet;
 import org.project.openbaton.clients.exceptions.VimDriverException;
-import org.project.openbaton.clients.interfaces.client.openstack.OpenstackClient;
+import org.openbaton.clients.interfaces.client.openstack.OpenstackClient;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;

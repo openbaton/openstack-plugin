@@ -26,7 +26,7 @@ import org.project.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
 import org.project.openbaton.catalogue.mano.record.Status;
 import org.project.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.project.openbaton.catalogue.nfvo.*;
-import org.project.openbaton.clients.interfaces.client.openstack.OpenstackClient;
+import org.openbaton.clients.interfaces.client.openstack.OpenstackClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;

@@ -1,4 +1,3 @@
-rootProject.name = 'plugins-sdk'
 
 include ':catalogue'
 include ':vim-drivers'

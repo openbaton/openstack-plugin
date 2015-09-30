@@ -56,7 +56,7 @@ project.ext {
      * gradle Related Vars
      */
     //------------------------------------------------//
-    mainClass = 'org.openbaton.plugin.main.spring.SpringPlugin'
+    mainClass = 'org.openbaton.clients.interfaces.client.openstack.Starter'
 }
 
 apply from: 'openbaton-libs/gradle/gradle/application.java.gradle'
@@ -68,4 +68,20 @@ repositories {
 }
 
 dependencies {
+    compile project(':catalogue')
+    compile project(':vim-drivers')
+    compile project(':plugin-sdk')
+
+    compile ('org.apache.jclouds.driver:jclouds-slf4j:1.9.0')
+    compile ('org.apache.jclouds.driver:jclouds-sshj:1.9.0')
+    compile ('org.apache.jclouds.api:openstack-keystone:1.9.0')
+    compile ('org.apache.jclouds.api:openstack-nova:1.9.0')
+    compile ('org.apache.jclouds.api:openstack-swift:1.9.0')
+    compile ('org.apache.jclouds.api:openstack-cinder:1.9.0')
+    compile ('org.apache.jclouds.api:openstack-trove:1.9.0')
+    compile ('org.apache.jclouds.labs:openstack-glance:1.9.0')
+    compile ('org.apache.jclouds.labs:openstack-neutron:1.9.0')
+    compile ('org.apache.jclouds.labs:openstack-marconi:1.9.0')
+
+    compile 'org.slf4j:slf4j-api:1.7.12'
 }
