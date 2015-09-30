@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2015. Fraunhofer FOKUS
+ * Copyright (c) 2015 Fraunhofer FOKUS
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,17 @@
  * limitations under the License.
  */
 
-include ':catalogue'
-include ':vim-drivers'
-include ':monitoring'
+package org.openbaton.common.vnfm_sdk.exception;
 
-project(':vim-drivers').projectDir = file('../openbaton-libs/vim-drivers')
-project(':monitoring').projectDir = file('../openbaton-libs/monitoring')
-project(':catalogue').projectDir = file('../openbaton-libs/catalogue')
+/**
+ * Created by mob on 31.08.15.
+ */
+public class NotFoundException extends Exception {
+    public NotFoundException(String msg){
+        super(msg);
+    }
+
+    public NotFoundException(Throwable e) {
+        super(e);
+    }
+}

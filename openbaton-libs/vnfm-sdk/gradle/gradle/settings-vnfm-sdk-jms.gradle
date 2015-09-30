@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2015. Fraunhofer FOKUS
+ * Copyright (c) 2015 Fraunhofer FOKUS
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,10 +14,10 @@
  * limitations under the License.
  */
 
-include ':catalogue'
-include ':vim-drivers'
-include ':monitoring'
+include 'catalogue'
+include 'vnfm-sdk'
+include 'vnfm-sdk-jms'
 
-project(':vim-drivers').projectDir = file('../openbaton-libs/vim-drivers')
-project(':monitoring').projectDir = file('../openbaton-libs/monitoring')
-project(':catalogue').projectDir = file('../openbaton-libs/catalogue')
+//project(':catalogue').projectDir = file('../../catalogue')
+//project(':vnfm-sdk').projectDir = file('../../vnfm-sdk')
+//project(':vnfm-sdk-jms').projectDir = file('../../vnfm-sdk-jms')
