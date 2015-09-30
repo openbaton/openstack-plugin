@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.project.openbaton.vim_drivers.test;
+package org.openbaton.vim_drivers.test;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
@@ -57,16 +57,16 @@ import org.junit.*;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.mockito.Matchers;
-import org.project.openbaton.catalogue.mano.common.DeploymentFlavour;
-import org.project.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
-import org.project.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
-import org.project.openbaton.catalogue.nfvo.*;
-import org.project.openbaton.catalogue.nfvo.Network;
-import org.project.openbaton.catalogue.nfvo.Quota;
-import org.project.openbaton.catalogue.nfvo.Server;
-import org.project.openbaton.catalogue.nfvo.Subnet;
-import org.project.openbaton.clients.exceptions.VimDriverException;
+import org.openbaton.catalogue.mano.common.DeploymentFlavour;
+import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
+import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
+import org.openbaton.catalogue.nfvo.*;
+import org.openbaton.catalogue.nfvo.Network;
+import org.openbaton.catalogue.nfvo.Quota;
+import org.openbaton.catalogue.nfvo.Server;
+import org.openbaton.catalogue.nfvo.Subnet;
 import org.openbaton.clients.interfaces.client.openstack.OpenstackClient;
+import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
