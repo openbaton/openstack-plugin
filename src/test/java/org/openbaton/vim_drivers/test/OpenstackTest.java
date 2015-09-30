@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.project.openbaton.vim_drivers.test;
+package org.openbaton.vim_drivers.test;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
@@ -30,7 +30,6 @@ import org.jclouds.openstack.glance.v1_0.domain.ImageDetails;
 import org.jclouds.openstack.glance.v1_0.features.ImageApi;
 import org.jclouds.openstack.glance.v1_0.options.CreateImageOptions;
 import org.jclouds.openstack.glance.v1_0.options.UpdateImageOptions;
-import org.jclouds.openstack.keystone.v2_0.KeystoneApi;
 import org.jclouds.openstack.neutron.v2.NeutronApi;
 import org.jclouds.openstack.neutron.v2.domain.*;
 import org.jclouds.openstack.neutron.v2.domain.ExternalGatewayInfo;
@@ -42,7 +41,6 @@ import org.jclouds.openstack.neutron.v2.extensions.RouterApi;
 import org.jclouds.openstack.neutron.v2.features.NetworkApi;
 import org.jclouds.openstack.neutron.v2.features.PortApi;
 import org.jclouds.openstack.neutron.v2.features.SubnetApi;
-import org.jclouds.openstack.neutron.v2_0.domain.*;
 import org.jclouds.openstack.nova.v2_0.NovaApi;
 import org.jclouds.openstack.nova.v2_0.domain.*;
 import org.jclouds.openstack.nova.v2_0.domain.FloatingIP;
@@ -57,19 +55,16 @@ import org.junit.*;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.mockito.Matchers;
-import org.project.openbaton.catalogue.mano.common.DeploymentFlavour;
-import org.project.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
-import org.project.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
-import org.project.openbaton.catalogue.nfvo.*;
-import org.project.openbaton.catalogue.nfvo.Network;
-import org.project.openbaton.catalogue.nfvo.Quota;
-import org.project.openbaton.catalogue.nfvo.Server;
-import org.project.openbaton.catalogue.nfvo.Subnet;
-import org.project.openbaton.clients.exceptions.VimDriverException;
+import org.openbaton.catalogue.mano.common.DeploymentFlavour;
+import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
+import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
+import org.openbaton.catalogue.nfvo.*;
+import org.openbaton.catalogue.nfvo.Network;
+import org.openbaton.catalogue.nfvo.Quota;
+import org.openbaton.catalogue.nfvo.Server;
+import org.openbaton.catalogue.nfvo.Subnet;
 import org.openbaton.clients.interfaces.client.openstack.OpenstackClient;
-import org.springframework.test.context.TestExecutionListeners;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
+import org.openbaton.vim.drivers.exceptions.VimDriverException;
 
 import java.rmi.RemoteException;
 import java.util.*;
@@ -82,8 +77,6 @@ import static org.mockito.Mockito.*;
 /**
  * Created by mpa on 07.05.15.
  */
-@TestExecutionListeners({DependencyInjectionTestExecutionListener.class})
-@TestPropertySource(properties = {"timezone = GMT", "port: 4242"})
 public class OpenstackTest {
 
     OpenstackClient openstackClient;
@@ -425,7 +418,7 @@ public class OpenstackTest {
     }
 
     @Test
-    public void testSetZone() {
+    public void setZoneTest() {
         openstackClient.setZone("");
         openstackClient.setZone("mocked");
     }
@@ -436,7 +429,6 @@ public class OpenstackTest {
         assertEqualsServers(definedServer, server);
         exception.expect(NullPointerException.class);
         server = openstackClient.launchInstance(vimInstance, "faulty_server", definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata");
-
     }
 
     @Test

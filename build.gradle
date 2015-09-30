@@ -28,6 +28,7 @@ plugins {
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
+apply plugin: 'jacoco'
 
 apply from: 'openbaton-libs/gradle/gradle/nexus.upload.plugin.gradle'
 apply from: 'openbaton-libs/gradle/gradle/command.line.helper.gradle'
@@ -86,4 +87,7 @@ dependencies {
     compile ('org.apache.jclouds.labs:openstack-marconi:1.9.0')
 
     compile 'org.slf4j:slf4j-api:1.7.12'
+
+    testCompile("org.mockito:mockito-all:1.10.19")
+    testCompile("junit:junit:4.12")
 }
