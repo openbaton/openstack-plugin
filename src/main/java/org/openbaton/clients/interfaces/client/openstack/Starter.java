@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.project.openbaton.clients.interfaces.client.openstack;
+package org.openbaton.clients.interfaces.client.openstack;
 
 import org.openbaton.plugin.PluginStarter;
 import org.slf4j.Logger;
@@ -31,8 +31,8 @@ public class Starter {
         log.info("params are: pluginName registryIp registryPort\ndefault is openstack-plugin localhost 1099");
 
         if (args.length > 1)
-            PluginStarter.run(OpenstackClient.class, args[0], args[1], Integer.parseInt(args[2]));
+            PluginStarter.run(org.openbaton.clients.interfaces.client.openstack.OpenstackClient.class, args[0], args[1], Integer.parseInt(args[2]));
         else
-            PluginStarter.run(OpenstackClient.class, "openstack-plugin", "localhost");
+            PluginStarter.run(org.openbaton.clients.interfaces.client.openstack.OpenstackClient.class, "openstack-plugin", "localhost");
     }
 }

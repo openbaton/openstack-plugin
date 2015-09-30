@@ -53,7 +53,7 @@ project.ext {
     applicationVersionSnapshot = (!applicationRelease) ? "+SNAPSHOT.${asUTC(applicationDate, 'yyyyMMdd')}.git${applicationRevision}" : ""
     applicationVersionFull = "${applicationVersion}${applicationVersionSnapshot}"
 
-    mainClass = 'org.project.openbaton.clients.interfaces.client.openstack.Starter'
+    mainClass = 'org.openbaton.clients.interfaces.client.openstack.Starter'
 }
 apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/bom.plugin.java.gradle'
 apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/application.java.gradle'

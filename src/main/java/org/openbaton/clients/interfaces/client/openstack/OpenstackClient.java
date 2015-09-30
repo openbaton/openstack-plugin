@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.project.openbaton.clients.interfaces.client.openstack;
+package org.openbaton.clients.interfaces.client.openstack;
 
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
