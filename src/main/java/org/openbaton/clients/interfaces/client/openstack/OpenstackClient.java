@@ -78,6 +78,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 
 import static org.jclouds.scriptbuilder.domain.Statements.exec;
@@ -85,7 +86,7 @@ import static org.jclouds.scriptbuilder.domain.Statements.exec;
 /**
  * Created by mpa on 06.05.15.
  */
-public class OpenstackClient implements ClientInterfaces {
+public class OpenstackClient extends UnicastRemoteObject implements ClientInterfaces {
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -893,3 +894,4 @@ public class OpenstackClient implements ClientInterfaces {
         return "openstack";
     }
 }
+
