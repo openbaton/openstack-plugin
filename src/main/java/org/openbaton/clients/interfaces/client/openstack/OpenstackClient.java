@@ -68,7 +68,7 @@ import org.openbaton.catalogue.nfvo.*;
 import org.openbaton.catalogue.nfvo.Network;
 import org.openbaton.catalogue.nfvo.Subnet;
 import org.openbaton.vim.drivers.exceptions.VimDriverException;
-import org.openbaton.vim.drivers.interfaces.ClientInterfaces;
+import org.openbaton.vim.drivers.interfaces.VimDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +78,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 
 import static org.jclouds.scriptbuilder.domain.Statements.exec;
@@ -86,7 +85,7 @@ import static org.jclouds.scriptbuilder.domain.Statements.exec;
 /**
  * Created by mpa on 06.05.15.
  */
-public class OpenstackClient extends UnicastRemoteObject implements ClientInterfaces {
+public class OpenstackClient extends VimDriver{
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
 

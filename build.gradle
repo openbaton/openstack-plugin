@@ -90,4 +90,6 @@ dependencies {
 
     testCompile("org.mockito:mockito-all:1.10.19")
     testCompile("junit:junit:4.12")
+
+    compile 'org.slf4j:slf4j-simple:1.7.12'
 }
