@@ -358,6 +358,47 @@ public class OpenstackClient extends VimDriver{
     }
 
     @Override
+    public NFVImage addImage(VimInstance vimInstance, NFVImage image, String image_url) {
+        init(vimInstance);
+        NFVImage addedImage = addImage(image.getName(), image_url, image.getDiskFormat(), image.getContainerFormat(), image.getMinDiskSpace(), image.getMinRam(), image.isPublic());
+        image.setName(addedImage.getName());
+        image.setExtId(addedImage.getExtId());
+        image.setCreated(addedImage.getCreated());
+        image.setUpdated(addedImage.getUpdated());
+        image.setMinDiskSpace(addedImage.getMinDiskSpace());
+        image.setMinRam(addedImage.getMinRam());
+        image.setIsPublic(addedImage.isPublic());
+        image.setDiskFormat(addedImage.getDiskFormat());
+        image.setContainerFormat(addedImage.getContainerFormat());
+
+        return image;
+    }
+
+    private NFVImage addImage(String name, String image_url, String diskFormat, String containerFromat, long minDisk, long minRam, boolean isPublic) {
+        ImageApi imageApi = this.glanceApi.getImageApi(this.defaultZone);
+        CreateImageOptions createImageOptions = new CreateImageOptions();
+        createImageOptions.minDisk(minDisk);
+        createImageOptions.minRam(minRam);
+        createImageOptions.isPublic(isPublic);
+        createImageOptions.diskFormat(DiskFormat.valueOf(diskFormat));
+        createImageOptions.containerFormat(ContainerFormat.valueOf(containerFromat));
+        createImageOptions.copyFrom(image_url);
+        //Create the Image
+        ImageDetails imageDetails = imageApi.reserve(name, new CreateImageOptions[]{createImageOptions});
+        NFVImage image = new NFVImage();
+        image.setName(imageDetails.getName());
+        image.setExtId(imageDetails.getId());
+        image.setCreated(imageDetails.getCreatedAt());
+        image.setUpdated(imageDetails.getUpdatedAt());
+        image.setMinDiskSpace(imageDetails.getMinDisk());
+        image.setMinRam(imageDetails.getMinRam());
+        image.setIsPublic(imageDetails.isPublic());
+        image.setDiskFormat(imageDetails.getDiskFormat().toString().toUpperCase());
+        image.setContainerFormat(imageDetails.getContainerFormat().toString().toUpperCase());
+        return image;
+    }
+
+    @Override
     public boolean deleteImage(VimInstance vimInstance, NFVImage image) {
         init(vimInstance);
         ImageApi imageApi = this.glanceApi.getImageApi(this.defaultZone);
