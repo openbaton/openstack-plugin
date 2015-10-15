@@ -224,8 +224,8 @@ public class OpenstackTest {
         faultyImage = new MyNovaImage("not_existing_image_ext_id", definedImage.getName(), new HashSet<Link>(), new Date(), new Date(), "", "", Image.Status.ACTIVE, 1, (int) definedImage.getMinDiskSpace(), (int) definedImage.getMinRam(), new ArrayList<BlockDeviceMapping>(), expImageResource, new HashMap<String, String>());
         //Server and Resources
         ServerExtendedStatus extStatus = new MyExtendedStatus("mocked_id", "mocked_name", 0);
-        Map<String, Collection<Address>> addressMap = new HashMap<>();
-        Collection<Address> addresses = new HashSet<>();
+        Map<String, Collection<Address>> addressMap = new HashMap<String, Collection<Address>>();
+        Collection<Address> addresses = new HashSet<Address>();
         addresses.add(new MyAddress("mocked_address", 4));
         addressMap.put("network", addresses);
         Multimap<String, Address> multimap = ArrayListMultimap.create();
@@ -315,6 +315,7 @@ public class OpenstackTest {
         when(imageApi.list()).thenReturn(mock(PagedIterable.class));
         when(imageApi.list().concat()).thenReturn(resImageFI);
         when(imageApi.create(anyString(), any(Payload.class), any(CreateImageOptions.class))).thenReturn(imageDetails);
+        when(imageApi.reserve(anyString(), any(CreateImageOptions.class))).thenReturn(imageDetails);
         when(imageApi.update(anyString(), any(UpdateImageOptions.class))).thenReturn(imageDetails);
         when(imageApi.delete(anyString())).thenReturn(true);
 
@@ -419,6 +420,7 @@ public class OpenstackTest {
 
     @Test
     public void setZoneTest() {
+        openstackClient.setZone(null);
         openstackClient.setZone("");
         openstackClient.setZone("mocked");
     }
@@ -475,6 +477,12 @@ public class OpenstackTest {
     @Test
     public void testAddImage() {
         NFVImage image = openstackClient.addImage(vimInstance, definedImage, "mocked_inputstream".getBytes());
+        assertEqualsImages(image, definedImage);
+    }
+
+    @Test
+    public void testAddImageByURL() {
+        NFVImage image = openstackClient.addImage(vimInstance, definedImage, "mocked_image_url");
         assertEqualsImages(image, definedImage);
     }
 
