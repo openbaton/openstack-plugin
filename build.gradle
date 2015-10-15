@@ -28,9 +28,7 @@ plugins {
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
-
-apply from: 'openbaton-libs/gradle/gradle/nexus.upload.plugin.gradle'
-apply from: 'openbaton-libs/gradle/gradle/command.line.helper.gradle'
+apply from: 'openbaton-libs/gradle/gradle/git.release.gradle'
 
 /**
  * Project settings
@@ -60,12 +58,61 @@ project.ext {
 }
 
 apply from: 'openbaton-libs/gradle/gradle/application.java.gradle'
-apply from: 'openbaton-libs/gradle/gradle/run.application.java.gradle'
-apply from: 'openbaton-libs/gradle/gradle/git.release.gradle'
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
+}
+
+project(':plugin-sdk') {
+    apply plugin: 'com.bmuschko.nexus'
+
+    modifyPom {
+        project {
+            name 'OpenBaton'
+            description 'Openbaton libraries for almost everything'
+            url 'http://openbaton.github.io'
+            inceptionYear '2015'
+            scm {
+                url 'http://openbaton.github.io'
+                connection ''
+                developerConnection 'https://github.com/openbaton'
+            }
+
+            licenses {
+                license {
+                    name 'The Apache Software License, Version 2.0'
+                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    distribution 'repo'
+                }
+            }
+
+            developers {
+                developer {
+                    id 'lto'
+                    name 'Lorenzo Tomasini'
+                    email 'lorenzo.tomasini@fokus.fraunhofer.de'
+                }
+                developer {
+                    id 'gca'
+                    name 'Giuseppe Carella'
+                    email 'giuseppe.carella@fokus.fraunhofer.de'
+                }
+            }
+        }
+    }
+
+    extraArchive {
+        sources = true
+        tests = false
+        javadoc = true
+    }
+
+    nexus {
+        sign = false
+        repositoryUrl = 'http://get.openbaton.org:8081/nexus/content/repositories/thirdparty/'
+        snapshotRepositoryUrl = 'http://get.openbaton.org:8081/nexus/content/repositories/snapshots/'
+    }
 }
