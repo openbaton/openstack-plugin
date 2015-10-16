@@ -103,6 +103,7 @@ public class OpenstackClient extends VimDriver{
     private String defaultZone = null;
 
     public OpenstackClient() throws RemoteException {
+        super();
     }
 
     public void setNovaApi(NovaApi novaApi) {
@@ -707,22 +708,24 @@ public class OpenstackClient extends VimDriver{
 
     @Override
     public Subnet createSubnet(VimInstance vimInstance, Network network, Subnet subnet) {
-        init(vimInstance);
         Subnet createdSubnet = createSubnet(network, subnet.getName(), subnet.getCidr());
         subnet.setExtId(createdSubnet.getExtId());
         subnet.setName(createdSubnet.getName());
         subnet.setCidr(createdSubnet.getCidr());
+        subnet.setGatewayIp(createdSubnet.getGatewayIp());
         return subnet;
     }
 
     private Subnet createSubnet(Network network, String name, String cidr) {
+        init(vimInstance);
         SubnetApi subnetApi = neutronApi.getSubnetApi(defaultZone);
-        CreateSubnet createSubnet = CreateSubnet.createBuilder(network.getExtId(), cidr).name(name).ipVersion(4).build();
+        CreateSubnet createSubnet = CreateSubnet.createBuilder(network.getExtId(), cidr).name(name).dnsNameServers(ImmutableSet.<String>of(properties.getProperty("dns-nameserver"))).ipVersion(4).build();
         org.jclouds.openstack.neutron.v2.domain.Subnet jcloudsSubnet = subnetApi.create(createSubnet);
         Subnet subnet = new Subnet();
         subnet.setExtId(jcloudsSubnet.getId());
         subnet.setName(jcloudsSubnet.getName());
         subnet.setCidr(jcloudsSubnet.getCidr());
+        subnet.setGatewayIp(jcloudsSubnet.getGatewayIp());
         String routerId = getRouter(vimInstance);
         if (routerId == null) {
             log.debug("Not found Router");
@@ -738,15 +741,16 @@ public class OpenstackClient extends VimDriver{
 
     @Override
     public Subnet updateSubnet(VimInstance vimInstance, Network network, Subnet subnet) {
-        init(vimInstance);
         Subnet updatedSubnet = updateSubnet(network, subnet.getExtId(), subnet.getName());
         subnet.setExtId(updatedSubnet.getExtId());
         subnet.setName(updatedSubnet.getName());
         subnet.setCidr(updatedSubnet.getCidr());
+        subnet.setGatewayIp(updatedSubnet.getGatewayIp());
         return subnet;
     }
 
     private Subnet updateSubnet(Network network, String subnetExtId, String name) {
+        init(vimInstance);
         SubnetApi subnetApi = neutronApi.getSubnetApi(defaultZone);
         //Cannot update read-only attribute cidr
         //Cannot update read-only attribute network_id
@@ -757,6 +761,7 @@ public class OpenstackClient extends VimDriver{
         subnet.setExtId(jcloudsSubnet.getId());
         subnet.setName(jcloudsSubnet.getName());
         subnet.setCidr(jcloudsSubnet.getCidr());
+        subnet.setGatewayIp(jcloudsSubnet.getGatewayIp());
         return subnet;
     }
 
@@ -820,7 +825,7 @@ public class OpenstackClient extends VimDriver{
     private String createPort(VimInstance vimInstance, Network network, Subnet subnet) {
         log.debug("Associating Subnet to Router");
         PortApi portApi = neutronApi.getPortApi(defaultZone);
-        Port.CreatePort createPort = Port.createBuilder(network.getExtId()).name("Port_" + network.getName() + "_" + (int) (Math.random() * 1000)).fixedIps(ImmutableSet.<IP>of(IP.builder().subnetId(subnet.getExtId()).build())).build();
+        Port.CreatePort createPort = Port.createBuilder(network.getExtId()).name("Port_" + network.getName() + "_" + (int) (Math.random() * 1000)).fixedIps(ImmutableSet.<IP>of(IP.builder().ipAddress(subnet.getGatewayIp()).build())).build();
         Port port = portApi.create(createPort);
         return port.getId();
     }
