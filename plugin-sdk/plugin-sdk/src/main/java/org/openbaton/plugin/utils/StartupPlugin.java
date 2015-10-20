@@ -21,17 +21,16 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.rmi.*;
-import java.rmi.server.UnicastRemoteObject;
 
 /**
  * Created by lto on 09/09/15.
  */
 public class StartupPlugin {
     protected static Logger log = LoggerFactory.getLogger(StartupPlugin.class);
+    private static Remote stub;
 
     private static <T extends Remote> Remote getStub(Class<T> plugin) throws InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException, NoSuchMethodException, RemoteException {
-        Remote service = plugin.getConstructor().newInstance();
-        return UnicastRemoteObject.exportObject(service,0);
+        return plugin.getConstructor().newInstance();
     }
 
     public static <T extends Remote> void register(Class<T> clazz, String name, String registryIp, int port) throws InvocationTargetException, NoSuchMethodException, RemoteException, InstantiationException, IllegalAccessException, MalformedURLException {
@@ -40,7 +39,8 @@ public class StartupPlugin {
         while (true)
             try {
                 i++;
-                Naming.rebind("//" + registryIp + ":" + port + "/" + name, getStub(clazz));
+                stub = getStub(clazz);
+                Naming.rebind("//" + registryIp + ":" + port + "/" + name, stub);
                 break;
             }catch (ConnectException e){
                 if (i == 50){
