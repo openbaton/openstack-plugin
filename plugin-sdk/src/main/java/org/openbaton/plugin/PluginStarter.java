@@ -40,7 +40,7 @@ public class PluginStarter {
             Properties properties = new Properties();
             properties.load(clazz.getResourceAsStream("/plugin.conf.properties"));
             String inte = "";
-            for (Class interf : clazz.getInterfaces())
+            for (Class interf : clazz.getSuperclass().getInterfaces())
                 if (interf.getName().equals(ClientInterfaces.class.getName()))
                     inte = "vim-drivers";
                 else
@@ -80,7 +80,7 @@ public class PluginStarter {
             Properties properties = new Properties();
             properties.load(clazz.getResourceAsStream("/plugin.conf.properties"));
             String inte = "";
-            for (Class interf : clazz.getInterfaces())
+            for (Class interf : clazz.getSuperclass().getInterfaces())
                 if (interf.getName().equals(ClientInterfaces.class.getName()))
                     inte = "vim-drivers";
                 else
