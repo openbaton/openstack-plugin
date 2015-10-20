@@ -4,6 +4,7 @@ include ':vim-drivers'
 include ':monitoring'
 include ':plugin-sdk'
 
-project(':catalogue').projectDir = file('openbaton-libs/catalogue')
-project(':monitoring').projectDir = file('openbaton-libs/monitoring')
-project(':vim-drivers').projectDir = file('openbaton-libs/vim-drivers')
+project(':plugin-sdk').projectDir = file('plugin-sdk/plugin-sdk')
+project(':catalogue').projectDir = file('plugin-sdk/openbaton-libs/catalogue')
+project(':monitoring').projectDir = file('plugin-sdk/openbaton-libs/monitoring')
+project(':vim-drivers').projectDir = file('plugin-sdk/openbaton-libs/vim-drivers')
