@@ -1,8 +1,3 @@
-rootProject.name = 'openbaton-libs'
-
-include 'catalogue'
-include 'vim-drivers'
-include 'vnfm-sdk'
 /*
  * Copyright (c) 2015 Fraunhofer FOKUS
  *
@@ -19,5 +14,14 @@ include 'vnfm-sdk'
  * limitations under the License.
  */
 
+include 'catalogue'
+include 'vim-drivers'
+include 'exception'
+include 'plugin'
+include 'vim-impl'
+include 'vim-int'
+include 'vnfm-sdk'
+include 'vnfm-sdk-jms'
+include 'vnfm-sdk-rest'
 include 'monitoring'
 
