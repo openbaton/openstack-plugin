@@ -63,4 +63,3 @@ public class StartupPlugin {
         Naming.unbind("//" + registryIp + ":1099/" + name);
     }
 }
-

@@ -30,8 +30,8 @@ apply plugin: 'idea'
 apply plugin: 'eclipse'
 apply plugin: 'jacoco'
 
-apply from: 'openbaton-libs/gradle/gradle/nexus.upload.plugin.gradle'
-apply from: 'openbaton-libs/gradle/gradle/command.line.helper.gradle'
+apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/nexus.upload.plugin.gradle'
+apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/command.line.helper.gradle'
 
 /**
  * Project settings
@@ -60,9 +60,9 @@ project.ext {
     mainClass = 'org.openbaton.clients.interfaces.client.openstack.Starter'
 }
 
-apply from: 'openbaton-libs/gradle/gradle/application.java.gradle'
-apply from: 'openbaton-libs/gradle/gradle/run.application.java.gradle'
-apply from: 'openbaton-libs/gradle/gradle/git.release.gradle'
+apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/application.java.gradle'
+apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/run.application.java.gradle'
+apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/git.release.gradle'
 
 repositories {
     mavenCentral()
