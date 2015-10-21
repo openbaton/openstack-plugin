@@ -18,7 +18,6 @@ package org.openbaton.vim_drivers.test;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
-import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.collect.IterableWithMarkers;
 import org.jclouds.collect.PagedIterable;
 import org.jclouds.collect.PagedIterables;
@@ -32,11 +31,6 @@ import org.jclouds.openstack.glance.v1_0.options.CreateImageOptions;
 import org.jclouds.openstack.glance.v1_0.options.UpdateImageOptions;
 import org.jclouds.openstack.neutron.v2.NeutronApi;
 import org.jclouds.openstack.neutron.v2.domain.*;
-import org.jclouds.openstack.neutron.v2.domain.ExternalGatewayInfo;
-import org.jclouds.openstack.neutron.v2.domain.IP;
-import org.jclouds.openstack.neutron.v2.domain.Port;
-import org.jclouds.openstack.neutron.v2.domain.Router;
-import org.jclouds.openstack.neutron.v2.domain.RouterInterface;
 import org.jclouds.openstack.neutron.v2.extensions.RouterApi;
 import org.jclouds.openstack.neutron.v2.features.NetworkApi;
 import org.jclouds.openstack.neutron.v2.features.PortApi;
@@ -443,7 +437,7 @@ public class OpenstackTest {
 
     @Test
     public void testLauchInstanceAndWaitFloatingIp() throws VimDriverException {
-        Server server = openstackClient.launchInstanceAndWait(vimInstance, definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata", true);
+        Server server = openstackClient.launchInstanceAndWait(vimInstance, definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata", new HashMap<String, String>());
         assertEqualsServers(definedServer, server);
     }
 
@@ -657,7 +651,7 @@ public class OpenstackTest {
         ips.add("mocked_ip");
         ipMap.put("mocked_network", ips);
         server.setIps(ipMap);
-        server.setFloatingIp("mocked_floating_ip");
+//        server.setFloatingIp("mocked_floating_ip");
         server.setCreated(new Date());
         server.setUpdated(new Date());
         return server;
