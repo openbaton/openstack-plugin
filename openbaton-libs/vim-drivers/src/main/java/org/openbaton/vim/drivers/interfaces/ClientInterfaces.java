@@ -22,6 +22,7 @@ import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -45,9 +46,9 @@ public interface ClientInterfaces extends Remote {
 
     List<DeploymentFlavour> listFlavors(VimInstance vimInstance) throws RemoteException;
 
-    Server launchInstanceAndWait(VimInstance vimInstance, String hostname, String image, String extId, String keyPair, Set<String> networks, Set<String> securityGroups, String s) throws VimDriverException, RemoteException;
+    Server launchInstanceAndWait(VimInstance vimInstance, String hostname, String image, String extId, String keyPair, Set<String> networks, Set<String> securityGroups, String s, Map<String, String> floatingIps) throws VimDriverException, RemoteException;
 
-    Server launchInstanceAndWait(VimInstance vimInstance, String hostname, String image, String extId, String keyPair, Set<String> networks, Set<String> securityGroups, String s, boolean floatingIp) throws VimDriverException, RemoteException;
+    Server launchInstanceAndWait(VimInstance vimInstance, String hostname, String image, String extId, String keyPair, Set<String> networks, Set<String> securityGroups, String s) throws VimDriverException, RemoteException;
 
     void deleteServerByIdAndWait(VimInstance vimInstance, String id) throws RemoteException;
 
@@ -56,6 +57,8 @@ public interface ClientInterfaces extends Remote {
     DeploymentFlavour addFlavor(VimInstance vimInstance, DeploymentFlavour deploymentFlavour) throws RemoteException;
 
     NFVImage addImage(VimInstance vimInstance, NFVImage image, byte[] imageFile) throws RemoteException;
+
+    NFVImage addImage(VimInstance vimInstance, NFVImage image, String image_url) throws RemoteException;
 
     NFVImage updateImage(VimInstance vimInstance, NFVImage image) throws RemoteException;
 
