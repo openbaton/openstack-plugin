@@ -1,7 +1,17 @@
 
+repositories {
+    mavenCentral()
+    maven {
+        url "http://get.openbaton.org:8081/nexus/content/groups/public"
+    }
+}
+
+
 dependencies {
-    compile project(':vim-drivers')
-    compile project(':monitoring')
+//    compile project(':vim-drivers')
+    compile 'org.openbaton:vim-drivers:0.11'
+//    compile project(':monitoring')
+    compile 'org.openbaton:monitoring:0.11'
 
     compile 'org.slf4j:slf4j-api:1.7.12'
 }
