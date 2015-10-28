@@ -8,10 +8,8 @@ repositories {
 
 
 dependencies {
-//    compile project(':vim-drivers')
-    compile 'org.openbaton:vim-drivers:0.12'
-//    compile project(':monitoring')
-    compile 'org.openbaton:monitoring:0.12'
+    compile 'org.openbaton:vim-drivers:0.13'
+    compile 'org.openbaton:monitoring:0.13'
 
     compile 'org.slf4j:slf4j-api:1.7.12'
 }
