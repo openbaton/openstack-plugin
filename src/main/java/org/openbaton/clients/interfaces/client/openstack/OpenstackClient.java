@@ -1095,26 +1095,6 @@ public class OpenstackClient extends VimDriver{
     public String getType(VimInstance vimInstance) {
         return "openstack";
     }
-
-    public static void main(final String[] args) {
-        OpenstackClient client = null;
-        try {
-            client = new OpenstackClient();
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-        VimInstance vimInstance = new VimInstance();
-
-        vimInstance.setKeyPair("tub-nubomedia");
-        vimInstance.setTenant("nubomedia");
-        vimInstance.setAuthUrl("http://80.96.122.48:5000/v2.0");
-        vimInstance.setPassword("nub0m3d1@");
-        vimInstance.setUsername("nubomedia");
-        vimInstance.setSecurityGroups(new HashSet<String>() {{
-            add("default");
-        }});
-
-        client.associateFloatingIpToNetwork(vimInstance,"172.22.28.115","80.96.122.60");
-    }
+    
 }
 
