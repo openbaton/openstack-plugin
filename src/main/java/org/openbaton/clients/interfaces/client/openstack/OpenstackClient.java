@@ -193,27 +193,28 @@ public class OpenstackClient extends VimDriver{
             }
         }
         Map<String, String> floatingIps = new HashMap<>();
-        if (floatingIp != null || floatingIp.size() == 0) {
+        if (floatingIp != null || floatingIp.size() > 0) {
             log.debug("FloatingIPs are: " + floatingIp);
             if (listFreeFloatingIps().size() >= floatingIp.size()) {
                 for (Map.Entry<String, String> fip : floatingIp.entrySet())
-                    if (fip.getValue().equals("random")) {
-                        String networkIp = server.getIps().get(fip.getKey()).get(0);
-                        if (networkIp == null)
-                            log.error("Cannot assign FloatingIPs to server " + server.getId() + " . wrong network" + fip.getKey());
-                        else {
-                            String floatingIp1 = listFreeFloatingIps().get(0);
-                            associateFloatingIpToNetwork(vimInstance, networkIp, floatingIp1);
-                            floatingIps.put(fip.getKey(), floatingIp1);
-                        }
-                    }
-                    else if (validate(fip.getValue())) {
-                        String networkIdByName = server.getIps().get(fip.getKey()).get(0);
-                        if (networkIdByName == null)
-                            log.error("Cannot assign FloatingIPs to server " + server.getId() + " . wrong network" + fip.getKey());
-                        else {
-                            associateFloatingIpToNetwork(vimInstance, networkIdByName, fip.getValue());
-                            floatingIps.put(fip.getKey(), fip.getValue());
+                    if (fip.getValue() != null) {
+                        if (fip.getValue().equals("random")) {
+                            String networkIp = server.getIps().get(fip.getKey()).get(0);
+                            if (networkIp == null)
+                                log.error("Cannot assign FloatingIPs to server " + server.getId() + " . wrong network" + fip.getKey());
+                            else {
+                                String floatingIp1 = listFreeFloatingIps().get(0);
+                                associateFloatingIpToNetwork(vimInstance, networkIp, floatingIp1);
+                                floatingIps.put(fip.getKey(), floatingIp1);
+                            }
+                        } else if (validate(fip.getValue())) {
+                            String networkIdByName = server.getIps().get(fip.getKey()).get(0);
+                            if (networkIdByName == null)
+                                log.error("Cannot assign FloatingIPs to server " + server.getId() + " . wrong network" + fip.getKey());
+                            else {
+                                associateFloatingIpToNetwork(vimInstance, networkIdByName, fip.getValue());
+                                floatingIps.put(fip.getKey(), fip.getValue());
+                            }
                         }
                     }
                     else log.error("Cannot assign FloatingIPs to server " + server.getId() + " . wrong floatingip: " + fip.getValue());
@@ -1095,6 +1096,6 @@ public class OpenstackClient extends VimDriver{
     public String getType(VimInstance vimInstance) {
         return "openstack";
     }
-    
+
 }
 
