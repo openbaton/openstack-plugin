@@ -72,6 +72,7 @@ import org.openbaton.vim.drivers.interfaces.VimDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PostConstruct;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -91,73 +92,47 @@ public class OpenstackClient extends VimDriver {
     private static final Pattern PATTERN = Pattern.compile(
             "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
     private Logger log = LoggerFactory.getLogger(this.getClass());
-    private VimInstance vimInstance;
-    private NovaApi novaApi;
-    private NeutronApi neutronApi;
     //private KeystoneApi keystoneApi;
-    private GlanceApi glanceApi;
-    private String tenantId;
-    private Set<String> zones;
-    private String defaultZone = null;
+
+    Iterable<Module> modules;
+
+    Properties overrides;
 
     public OpenstackClient() throws RemoteException {
         super();
+        init();
     }
 
     public static boolean validate(final String ip) {
         return PATTERN.matcher(ip).matches();
     }
 
-    public void setNovaApi(NovaApi novaApi) {
-        this.novaApi = novaApi;
-    }
-
-    public void setVimInstance(VimInstance vimInstance) {
-        this.vimInstance = vimInstance;
-    }
-
-    public void setNeutronApi(NeutronApi neutronApi) {
-        this.neutronApi = neutronApi;
-    }
-
-    public void setGlanceApi(GlanceApi glanceApi) {
-        this.glanceApi = glanceApi;
-    }
-
-    public void setTenantId(String tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    public void init(VimInstance vimInstance) {
-        Iterable<Module> modules = ImmutableSet.<Module>of(new SLF4JLoggingModule());
-        Properties overrides = new Properties();
+    public void init() {
+        modules = ImmutableSet.<Module>of(new SLF4JLoggingModule());
+        overrides = new Properties();
         overrides.setProperty(KeystoneProperties.CREDENTIAL_TYPE, CredentialTypes.PASSWORD_CREDENTIALS);
         overrides.setProperty(Constants.PROPERTY_RELAX_HOSTNAME, "true");
         overrides.setProperty(Constants.PROPERTY_TRUST_ALL_CERTS, "true");
-        this.vimInstance = vimInstance;
-        this.novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
-        this.neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
-        this.glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
+        //NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        //NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        //GlanceApi glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
         //this.keystoneApi = ContextBuilder.newBuilder("openstack-keystone").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(KeystoneApi.class);
         //this.tenantId = keystoneApi.getTenantApi().get().getByName(vimInstance.getTenant()).getId();
-        this.tenantId = getTenantId(vimInstance);
-        this.zones = novaApi.getConfiguredRegions();
-        if (null == defaultZone) {
-            this.defaultZone = zones.iterator().next();
-        }
+        //String tenantId = getTenantId(vimInstance);
     }
 
-    public void setZone(String zone) {
-        if (null != zone && "" == zone) {
-            defaultZone = zone;
-        }
+    public String getZone(VimInstance vimInstance) {
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        Set<String> zones = novaApi.getConfiguredRegions();
+        String zone = zones.iterator().next();
+        return zone;
     }
 
     @Override
-    public synchronized Server launchInstance(VimInstance vimInstance, String name, String imageId, String flavorId, String keypair, Set<String> network, Set<String> secGroup, String userData) {
+    public Server launchInstance(VimInstance vimInstance, String name, String imageId, String flavorId, String keypair, Set<String> network, Set<String> secGroup, String userData) {
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        ServerApi serverApi = novaApi.getServerApi(getZone(vimInstance));
         String script = new ScriptBuilder().addStatement(exec(userData)).render(OsFamily.UNIX);
-        init(vimInstance);
-        ServerApi serverApi = this.novaApi.getServerApi(defaultZone);
         CreateServerOptions options = CreateServerOptions.Builder.keyPairName(keypair).networks(network).securityGroupNames(secGroup).userData(script.getBytes());
         String extId = serverApi.create(name, imageId, flavorId, options).getId();
         Server server = getServerById(vimInstance, extId);
@@ -189,37 +164,15 @@ public class OpenstackClient extends VimDriver {
                 throw new VimDriverException(server.getExtendedStatus());
             }
         }
-        Map<String, String> floatingIps = new HashMap<>();
         if (floatingIp != null || floatingIp.size() > 0) {
             log.debug("FloatingIPs are: " + floatingIp);
-            if (listFreeFloatingIps().size() >= floatingIp.size()) {
+            if (listFreeFloatingIps(vimInstance).size() >= floatingIp.size()) {
                 for (Map.Entry<String, String> fip : floatingIp.entrySet())
-                    if (fip.getValue() != null) {
-                        if (fip.getValue().equals("random")) {
-                            String networkIp = server.getIps().get(fip.getKey()).get(0);
-                            if (networkIp == null)
-                                log.error("Cannot assign FloatingIPs to server " + server.getId() + " . wrong network" + fip.getKey());
-                            else {
-                                String floatingIp1 = listFreeFloatingIps().get(0);
-                                associateFloatingIpToNetwork(vimInstance, networkIp, floatingIp1);
-                                floatingIps.put(fip.getKey(), floatingIp1);
-                            }
-                        } else if (validate(fip.getValue())) {
-                            String networkIdByName = server.getIps().get(fip.getKey()).get(0);
-                            if (networkIdByName == null)
-                                log.error("Cannot assign FloatingIPs to server " + server.getId() + " . wrong network" + fip.getKey());
-                            else {
-                                associateFloatingIpToNetwork(vimInstance, networkIdByName, fip.getValue());
-                                floatingIps.put(fip.getKey(), fip.getValue());
-                            }
-                        }
-                    } else
-                        log.error("Cannot assign FloatingIPs to server " + server.getId() + " . wrong floatingip: " + fip.getValue());
+                    associateFloatingIpToNetwork(vimInstance, server, fip);
             } else {
                 log.error("Cannot assign FloatingIPs to server " + server.getId() + " . No FloatingIPs left...");
             }
         }
-        server.setFloatingIps(floatingIps);
         return server;
     }
 
@@ -231,21 +184,20 @@ public class OpenstackClient extends VimDriver {
         return null;
     }
 
-    public void rebootServer(String extId, RebootType type) {
-        init(vimInstance);
-        ServerApi serverApi = this.novaApi.getServerApi(defaultZone);
+    public void rebootServer(VimInstance vimInstance, String extId, RebootType type) {
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        ServerApi serverApi = novaApi.getServerApi(getZone(vimInstance));
         serverApi.reboot(extId, type);
     }
 
     public void deleteServerById(VimInstance vimInstance, String extId) {
-        init(vimInstance);
-        ServerApi serverApi = this.novaApi.getServerApi(defaultZone);
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        ServerApi serverApi = novaApi.getServerApi(getZone(vimInstance));
         serverApi.delete(extId);
     }
 
     @Override
     public void deleteServerByIdAndWait(VimInstance vimInstance, String extId) {
-        init(vimInstance);
         boolean deleteCompleted = false;
         deleteServerById(vimInstance, extId);
         while (deleteCompleted == false) {
@@ -264,8 +216,8 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public List<NFVImage> listImages(VimInstance vimInstance) {
-        init(vimInstance);
-        ImageApi imageApi = this.glanceApi.getImageApi(defaultZone);
+        GlanceApi glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
+        ImageApi imageApi = glanceApi.getImageApi(getZone(vimInstance));
         List<NFVImage> images = new ArrayList<NFVImage>();
         for (ImageDetails jcloudsImage : imageApi.listInDetail().concat()) {
             NFVImage image = new NFVImage();
@@ -285,11 +237,12 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public List<Server> listServer(VimInstance vimInstance) {
-        init(vimInstance);
         List<Server> servers = new ArrayList<Server>();
-        ServerApi serverApi = this.novaApi.getServerApi(defaultZone);
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        ServerApi serverApi = novaApi.getServerApi(getZone(vimInstance));
+        String tenantId = getTenantId(vimInstance);
         for (org.jclouds.openstack.nova.v2_0.domain.Server jcloudsServer : serverApi.listInDetail().concat()) {
-            if (jcloudsServer.getTenantId().equals(this.tenantId)) {
+            if (jcloudsServer.getTenantId().equals(tenantId)) {
                 Server server = new Server();
                 server.setExtId(jcloudsServer.getId());
                 server.setName(jcloudsServer.getName());
@@ -304,19 +257,20 @@ public class OpenstackClient extends VimDriver {
                     ipMap.put(key, ips);
                 }
                 server.setIps(ipMap);
+                server.setFloatingIps(new HashMap<String, String>());
                 server.setCreated(jcloudsServer.getCreated());
                 server.setUpdated(jcloudsServer.getUpdated());
-                server.setImage(getImageById(jcloudsServer.getImage().getId()));
-                server.setFlavor(getFlavorById(jcloudsServer.getFlavor().getId()));
+                server.setImage(getImageById(vimInstance, jcloudsServer.getImage().getId()));
+                server.setFlavor(getFlavorById(vimInstance, jcloudsServer.getFlavor().getId()));
                 servers.add(server);
             }
         }
         return servers;
     }
 
-    private synchronized Server getServerById(VimInstance vimInstance, String extId) {
-        init(vimInstance);
-        ServerApi serverApi = this.novaApi.getServerApi(defaultZone);
+    private Server getServerById(VimInstance vimInstance, String extId) {
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        ServerApi serverApi = novaApi.getServerApi(getZone(vimInstance));
         try {
             org.jclouds.openstack.nova.v2_0.domain.Server jcloudsServer = serverApi.get(extId);
             log.trace("" + jcloudsServer);
@@ -334,10 +288,11 @@ public class OpenstackClient extends VimDriver {
                 ipMap.put(key, ips);
             }
             server.setIps(ipMap);
+            server.setFloatingIps(new HashMap<String, String>());
             server.setCreated(jcloudsServer.getCreated());
             server.setUpdated(jcloudsServer.getUpdated());
-            server.setImage(getImageById(jcloudsServer.getImage().getId()));
-            server.setFlavor(getFlavorById(jcloudsServer.getFlavor().getId()));
+            server.setImage(getImageById(vimInstance, jcloudsServer.getImage().getId()));
+            server.setFlavor(getFlavorById(vimInstance, jcloudsServer.getFlavor().getId()));
             return server;
         } catch (NullPointerException e) {
             throw new NullPointerException("Server with extId: " + extId + " not found.");
@@ -346,8 +301,7 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public NFVImage addImage(VimInstance vimInstance, NFVImage image, byte[] imageFile) {
-        init(vimInstance);
-        NFVImage addedImage = addImage(image.getName(), new ByteArrayInputStream(imageFile), image.getDiskFormat(), image.getContainerFormat(), image.getMinDiskSpace(), image.getMinRam(), image.isPublic());
+        NFVImage addedImage = addImage(vimInstance, image.getName(), new ByteArrayInputStream(imageFile), image.getDiskFormat(), image.getContainerFormat(), image.getMinDiskSpace(), image.getMinRam(), image.isPublic());
         image.setName(addedImage.getName());
         image.setExtId(addedImage.getExtId());
         image.setCreated(addedImage.getCreated());
@@ -360,8 +314,9 @@ public class OpenstackClient extends VimDriver {
         return image;
     }
 
-    private NFVImage addImage(String name, InputStream payload, String diskFormat, String containerFromat, long minDisk, long minRam, boolean isPublic) {
-        ImageApi imageApi = this.glanceApi.getImageApi(this.defaultZone);
+    private NFVImage addImage(VimInstance vimInstance, String name, InputStream payload, String diskFormat, String containerFromat, long minDisk, long minRam, boolean isPublic) {
+        GlanceApi glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
+        ImageApi imageApi = glanceApi.getImageApi(getZone(vimInstance));
         CreateImageOptions createImageOptions = new CreateImageOptions();
         createImageOptions.minDisk(minDisk);
         createImageOptions.minRam(minRam);
@@ -398,8 +353,7 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public NFVImage addImage(VimInstance vimInstance, NFVImage image, String image_url) {
-        init(vimInstance);
-        NFVImage addedImage = addImage(image.getName(), image_url, image.getDiskFormat(), image.getContainerFormat(), image.getMinDiskSpace(), image.getMinRam(), image.isPublic());
+        NFVImage addedImage = addImage(vimInstance, image.getName(), image_url, image.getDiskFormat(), image.getContainerFormat(), image.getMinDiskSpace(), image.getMinRam(), image.isPublic());
         image.setName(addedImage.getName());
         image.setExtId(addedImage.getExtId());
         image.setCreated(addedImage.getCreated());
@@ -413,8 +367,9 @@ public class OpenstackClient extends VimDriver {
         return image;
     }
 
-    private NFVImage addImage(String name, String image_url, String diskFormat, String containerFromat, long minDisk, long minRam, boolean isPublic) {
-        ImageApi imageApi = this.glanceApi.getImageApi(this.defaultZone);
+    private NFVImage addImage(VimInstance vimInstance, String name, String image_url, String diskFormat, String containerFromat, long minDisk, long minRam, boolean isPublic) {
+        GlanceApi glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
+        ImageApi imageApi = glanceApi.getImageApi(getZone(vimInstance));
         CreateImageOptions createImageOptions = new CreateImageOptions();
         createImageOptions.minDisk(minDisk);
         createImageOptions.minRam(minRam);
@@ -439,16 +394,15 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public boolean deleteImage(VimInstance vimInstance, NFVImage image) {
-        init(vimInstance);
-        ImageApi imageApi = this.glanceApi.getImageApi(this.defaultZone);
+        GlanceApi glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
+        ImageApi imageApi = glanceApi.getImageApi(getZone(vimInstance));
         boolean isDeleted = imageApi.delete(image.getExtId());
         return isDeleted;
     }
 
     @Override
     public NFVImage updateImage(VimInstance vimInstance, NFVImage image) {
-        init(vimInstance);
-        NFVImage updatedImage = updateImage(image.getExtId(), image.getName(), image.getDiskFormat(), image.getContainerFormat(), image.getMinDiskSpace(), image.getMinRam(), image.isPublic());
+        NFVImage updatedImage = updateImage(vimInstance, image.getExtId(), image.getName(), image.getDiskFormat(), image.getContainerFormat(), image.getMinDiskSpace(), image.getMinRam(), image.isPublic());
         image.setName(updatedImage.getName());
         image.setExtId(updatedImage.getExtId());
         image.setCreated(updatedImage.getCreated());
@@ -461,8 +415,9 @@ public class OpenstackClient extends VimDriver {
         return image;
     }
 
-    private NFVImage updateImage(String extId, String name, String diskFormat, String containerFormat, long minDisk, long minRam, boolean isPublic) {
-        ImageApi imageApi = this.glanceApi.getImageApi(this.defaultZone);
+    private NFVImage updateImage(VimInstance vimInstance, String extId, String name, String diskFormat, String containerFormat, long minDisk, long minRam, boolean isPublic) {
+        GlanceApi glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
+        ImageApi imageApi = glanceApi.getImageApi(getZone(vimInstance));
         UpdateImageOptions updateImageOptions = new UpdateImageOptions();
         updateImageOptions.name(name);
         updateImageOptions.minRam(minRam);
@@ -486,8 +441,7 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public NFVImage copyImage(VimInstance vimInstance, NFVImage image, byte[] imageFile) {
-        init(vimInstance);
-        NFVImage copiedImage = copyImage(image.getName(), new ByteArrayInputStream(imageFile), image.getDiskFormat(), image.getContainerFormat(), image.getMinDiskSpace(), image.getMinRam(), image.isPublic());
+        NFVImage copiedImage = copyImage(vimInstance, image.getName(), new ByteArrayInputStream(imageFile), image.getDiskFormat(), image.getContainerFormat(), image.getMinDiskSpace(), image.getMinRam(), image.isPublic());
         image.setName(copiedImage.getName());
         image.setExtId(copiedImage.getExtId());
         image.setCreated(copiedImage.getCreated());
@@ -500,14 +454,16 @@ public class OpenstackClient extends VimDriver {
         return image;
     }
 
-    private NFVImage copyImage(String name, InputStream inputStream, String diskFormat, String containerFormat, long minDisk, long minRam, boolean isPublic) {
-        ImageApi imageApi = this.glanceApi.getImageApi(this.defaultZone);
-        NFVImage image = addImage(name, inputStream, diskFormat, containerFormat, minDisk, minRam, isPublic);
+    private NFVImage copyImage(VimInstance vimInstance, String name, InputStream inputStream, String diskFormat, String containerFormat, long minDisk, long minRam, boolean isPublic) {
+        GlanceApi glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
+        ImageApi imageApi = glanceApi.getImageApi(getZone(vimInstance));
+        NFVImage image = addImage(vimInstance, name, inputStream, diskFormat, containerFormat, minDisk, minRam, isPublic);
         return image;
     }
 
-    private NFVImage getImageById(String extId) {
-        org.jclouds.openstack.nova.v2_0.features.ImageApi imageApi = this.novaApi.getImageApi(this.defaultZone);
+    private NFVImage getImageById(VimInstance vimInstance, String extId) {
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        org.jclouds.openstack.nova.v2_0.features.ImageApi imageApi = novaApi.getImageApi(getZone(vimInstance));
         try {
             org.jclouds.openstack.nova.v2_0.domain.Image jcloudsImage = imageApi.get(extId);
             NFVImage image = new NFVImage();
@@ -531,8 +487,7 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public DeploymentFlavour addFlavor(VimInstance vimInstance, DeploymentFlavour flavor) {
-        init(vimInstance);
-        DeploymentFlavour addedFlavor = addFlavor(flavor.getFlavour_key(), flavor.getVcpus(), flavor.getRam(), flavor.getDisk());
+        DeploymentFlavour addedFlavor = addFlavor(vimInstance, flavor.getFlavour_key(), flavor.getVcpus(), flavor.getRam(), flavor.getDisk());
         flavor.setExtId(addedFlavor.getExtId());
         flavor.setFlavour_key(addedFlavor.getFlavour_key());
         flavor.setVcpus(addedFlavor.getVcpus());
@@ -541,8 +496,9 @@ public class OpenstackClient extends VimDriver {
         return flavor;
     }
 
-    private DeploymentFlavour addFlavor(String name, int vcpus, int ram, int disk) {
-        FlavorApi flavorApi = this.novaApi.getFlavorApi(this.defaultZone);
+    private DeploymentFlavour addFlavor(VimInstance vimInstance, String name, int vcpus, int ram, int disk) {
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        FlavorApi flavorApi = novaApi.getFlavorApi(getZone(vimInstance));
         UUID id = java.util.UUID.randomUUID();
         org.jclouds.openstack.nova.v2_0.domain.Flavor newFlavor = org.jclouds.openstack.nova.v2_0.domain.Flavor.builder().id(id.toString()).name(name).disk(disk).ram(ram).vcpus(vcpus).build();
         org.jclouds.openstack.nova.v2_0.domain.Flavor jcloudsFlavor = flavorApi.create(newFlavor);
@@ -557,7 +513,6 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public DeploymentFlavour updateFlavor(VimInstance vimInstance, DeploymentFlavour flavor) throws VimDriverException {
-        init(vimInstance);
         try {
             DeploymentFlavour updatedFlavor = updateFlavor(vimInstance, flavor.getExtId(), flavor.getFlavour_key(), flavor.getVcpus(), flavor.getRam(), flavor.getDisk());
             flavor.setFlavour_key(updatedFlavor.getFlavour_key());
@@ -572,7 +527,8 @@ public class OpenstackClient extends VimDriver {
     }
 
     private DeploymentFlavour updateFlavor(VimInstance vimInstance, String extId, String name, int vcpus, int ram, int disk) throws VimDriverException {
-        FlavorApi flavorApi = this.novaApi.getFlavorApi(this.defaultZone);
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        FlavorApi flavorApi = novaApi.getFlavorApi(getZone(vimInstance));
         boolean isDeleted = deleteFlavor(vimInstance, extId);
         if (isDeleted) {
             org.jclouds.openstack.nova.v2_0.domain.Flavor newFlavor = org.jclouds.openstack.nova.v2_0.domain.Flavor.builder().id(extId).name(name).disk(disk).ram(ram).vcpus(vcpus).build();
@@ -591,12 +547,12 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public boolean deleteFlavor(VimInstance vimInstance, String extId) {
-        init(vimInstance);
-        FlavorApi flavorApi = this.novaApi.getFlavorApi(this.defaultZone);
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        FlavorApi flavorApi = novaApi.getFlavorApi(getZone(vimInstance));
         flavorApi.delete(extId);
         boolean isDeleted;
         try {
-            getFlavorById(extId);
+            getFlavorById(vimInstance, extId);
             isDeleted = true;
         } catch (NullPointerException e) {
             isDeleted = false;
@@ -605,8 +561,9 @@ public class OpenstackClient extends VimDriver {
     }
 
 
-    private DeploymentFlavour getFlavorById(String extId) {
-        FlavorApi flavorApi = this.novaApi.getFlavorApi(this.defaultZone);
+    private DeploymentFlavour getFlavorById(VimInstance vimInstance, String extId) {
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        FlavorApi flavorApi = novaApi.getFlavorApi(getZone(vimInstance));
         try {
             org.jclouds.openstack.nova.v2_0.domain.Flavor jcloudsFlavor = flavorApi.get(extId);
             DeploymentFlavour flavor = new DeploymentFlavour();
@@ -623,9 +580,9 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public List<DeploymentFlavour> listFlavors(VimInstance vimInstance) {
-        init(vimInstance);
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        FlavorApi flavorApi = novaApi.getFlavorApi(getZone(vimInstance));
         List<DeploymentFlavour> flavors = new ArrayList<DeploymentFlavour>();
-        FlavorApi flavorApi = this.novaApi.getFlavorApi(this.defaultZone);
         for (org.jclouds.openstack.nova.v2_0.domain.Flavor jcloudsFlavor : flavorApi.listInDetail().concat()) {
             DeploymentFlavour flavor = new DeploymentFlavour();
             flavor.setExtId(jcloudsFlavor.getId());
@@ -640,8 +597,7 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public Network createNetwork(VimInstance vimInstance, Network network) {
-        init(vimInstance);
-        Network createdNetwork = createNetwork(network.getName(), network.isExternal(), network.isShared());
+        Network createdNetwork = createNetwork(vimInstance, network.getName(), network.isExternal(), network.isShared());
         network.setName(createdNetwork.getName());
         network.setExtId(createdNetwork.getExtId());
         network.setExternal(createdNetwork.isExternal());
@@ -649,8 +605,9 @@ public class OpenstackClient extends VimDriver {
         return network;
     }
 
-    private Network createNetwork(String name, boolean external, boolean shared) {
-        NetworkApi networkApi = neutronApi.getNetworkApi(defaultZone);
+    private Network createNetwork(VimInstance vimInstance, String name, boolean external, boolean shared) {
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        NetworkApi networkApi = neutronApi.getNetworkApi(getZone(vimInstance));
         //CreateNetwork createNetwork = CreateNetwork.createBuilder(name).networkType(NetworkType.fromValue(networkType)).external(external).shared(shared).segmentationId(segmentationId).physicalNetworkName(physicalNetworkName).build();
         CreateNetwork createNetwork = CreateNetwork.createBuilder(name).external(external).shared(shared).build();
         org.jclouds.openstack.neutron.v2.domain.Network jcloudsNetwork = networkApi.create(createNetwork);
@@ -664,8 +621,7 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public Network updateNetwork(VimInstance vimInstance, Network network) {
-        init(vimInstance);
-        Network updatedNetwork = updateNetwork(network.getExtId(), network.getName(), network.isExternal(), network.isShared());
+        Network updatedNetwork = updateNetwork(vimInstance, network.getExtId(), network.getName(), network.isExternal(), network.isShared());
         network.setName(updatedNetwork.getName());
         network.setExtId(updatedNetwork.getExtId());
         network.setExternal(updatedNetwork.isExternal());
@@ -673,8 +629,9 @@ public class OpenstackClient extends VimDriver {
         return network;
     }
 
-    private Network updateNetwork(String extId, String name, boolean external, boolean shared) {
-        NetworkApi networkApi = neutronApi.getNetworkApi(defaultZone);
+    private Network updateNetwork(VimInstance vimInstance, String extId, String name, boolean external, boolean shared) {
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        NetworkApi networkApi = neutronApi.getNetworkApi(getZone(vimInstance));
         //Plugin does not support updating provider attributes. -> NetworkType, SegmentationId, physicalNetworkName
         UpdateNetwork updateNetwork = UpdateNetwork.updateBuilder().name(name).build();
         org.jclouds.openstack.neutron.v2.domain.Network jcloudsNetwork = networkApi.update(extId, updateNetwork);
@@ -688,8 +645,8 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public boolean deleteNetwork(VimInstance vimInstance, String extId) {
-        init(vimInstance);
-        NetworkApi networkApi = neutronApi.getNetworkApi(defaultZone);
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        NetworkApi networkApi = neutronApi.getNetworkApi(getZone(vimInstance));
         boolean isDeleted = networkApi.delete(extId);
         return isDeleted;
     }
@@ -697,8 +654,8 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public Network getNetworkById(VimInstance vimInstance, String extId) {
-        init(vimInstance);
-        NetworkApi networkApi = neutronApi.getNetworkApi(defaultZone);
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        NetworkApi networkApi = neutronApi.getNetworkApi(getZone(vimInstance));
         try {
             org.jclouds.openstack.neutron.v2.domain.Network jcloudsNetwork = networkApi.get(extId);
             Network network = new Network();
@@ -714,8 +671,8 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public List<String> getSubnetsExtIds(VimInstance vimInstance, String extId) {
-        init(vimInstance);
-        NetworkApi networkApi = neutronApi.getNetworkApi(defaultZone);
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        NetworkApi networkApi = neutronApi.getNetworkApi(getZone(vimInstance));
         List<String> subnets = new ArrayList<String>();
         try {
             org.jclouds.openstack.neutron.v2.domain.Network jcloudsNetwork = networkApi.get(extId);
@@ -728,10 +685,11 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public List<Network> listNetworks(VimInstance vimInstance) {
-        init(vimInstance);
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
         List<Network> networks = new ArrayList<Network>();
-        for (org.jclouds.openstack.neutron.v2.domain.Network jcloudsNetwork : this.neutronApi.getNetworkApi(defaultZone).list().concat()) {
-            if (jcloudsNetwork.getTenantId().equals(this.tenantId)) {
+        String tenantId = getTenantId(vimInstance);
+        for (org.jclouds.openstack.neutron.v2.domain.Network jcloudsNetwork : neutronApi.getNetworkApi(getZone(vimInstance)).list().concat()) {
+            if (jcloudsNetwork.getTenantId().equals(tenantId)) {
                 log.trace("OpenstackNetwork: " + jcloudsNetwork.toString());
                 Network network = new Network();
                 network.setName(jcloudsNetwork.getName());
@@ -746,7 +704,7 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public Subnet createSubnet(VimInstance vimInstance, Network network, Subnet subnet) {
-        Subnet createdSubnet = createSubnet(network, subnet.getName(), subnet.getCidr());
+        Subnet createdSubnet = createSubnet(vimInstance, network, subnet.getName(), subnet.getCidr());
         subnet.setExtId(createdSubnet.getExtId());
         subnet.setName(createdSubnet.getName());
         subnet.setCidr(createdSubnet.getCidr());
@@ -754,9 +712,9 @@ public class OpenstackClient extends VimDriver {
         return subnet;
     }
 
-    private Subnet createSubnet(Network network, String name, String cidr) {
-        init(vimInstance);
-        SubnetApi subnetApi = neutronApi.getSubnetApi(defaultZone);
+    private Subnet createSubnet(VimInstance vimInstance, Network network, String name, String cidr) {
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        SubnetApi subnetApi = neutronApi.getSubnetApi(getZone(vimInstance));
         CreateSubnet createSubnet = CreateSubnet.createBuilder(network.getExtId(), cidr).name(name).dnsNameServers(ImmutableSet.<String>of(properties.getProperty("dns-nameserver"))).ipVersion(4).build();
         org.jclouds.openstack.neutron.v2.domain.Subnet jcloudsSubnet = subnetApi.create(createSubnet);
         Subnet subnet = new Subnet();
@@ -779,7 +737,7 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public Subnet updateSubnet(VimInstance vimInstance, Network network, Subnet subnet) {
-        Subnet updatedSubnet = updateSubnet(network, subnet.getExtId(), subnet.getName());
+        Subnet updatedSubnet = updateSubnet(vimInstance, network, subnet.getExtId(), subnet.getName());
         subnet.setExtId(updatedSubnet.getExtId());
         subnet.setName(updatedSubnet.getName());
         subnet.setCidr(updatedSubnet.getCidr());
@@ -787,9 +745,9 @@ public class OpenstackClient extends VimDriver {
         return subnet;
     }
 
-    private Subnet updateSubnet(Network network, String subnetExtId, String name) {
-        init(vimInstance);
-        SubnetApi subnetApi = neutronApi.getSubnetApi(defaultZone);
+    private Subnet updateSubnet(VimInstance vimInstance, Network network, String subnetExtId, String name) {
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        SubnetApi subnetApi = neutronApi.getSubnetApi(getZone(vimInstance));
         //Cannot update read-only attribute cidr
         //Cannot update read-only attribute network_id
         //Cannot update read-only attribute ip_version
@@ -805,12 +763,13 @@ public class OpenstackClient extends VimDriver {
 
     private String getRouter(VimInstance vimInstance) {
         log.debug("Getting existing Router to associate with new Subnet");
-        init(vimInstance);
-        RouterApi routerApi = neutronApi.getRouterApi(defaultZone).get();
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        RouterApi routerApi = neutronApi.getRouterApi(getZone(vimInstance)).get();
         PagedIterable routerList = routerApi.list();
+        String tenantId = getTenantId(vimInstance);
         if (routerList.iterator().hasNext()) {
             for (Router router : (FluentIterable<Router>) routerList.concat())
-                if (router.getTenantId().equals(this.tenantId)) {
+                if (router.getTenantId().equals(tenantId)) {
                     ExternalGatewayInfo externalGatewayInfo = router.getExternalGatewayInfo();
                     if (externalGatewayInfo != null) {
                         String networkId = externalGatewayInfo.getNetworkId();
@@ -825,8 +784,8 @@ public class OpenstackClient extends VimDriver {
 
     private String createRouter(VimInstance vimInstance) {
         log.debug("Creating a new Router");
-        init(vimInstance);
-        RouterApi routerApi = neutronApi.getRouterApi(defaultZone).get();
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        RouterApi routerApi = neutronApi.getRouterApi(getZone(vimInstance)).get();
         //Find external network
         String externalNetId = null;
         for (Network network : listNetworks(vimInstance)) {
@@ -845,24 +804,25 @@ public class OpenstackClient extends VimDriver {
     }
 
     private String attachInterface(VimInstance vimInstance, String routerId, String subnetId) {
-        init(vimInstance);
         log.debug("Associating Subnet to Router");
-        RouterApi routerApi = neutronApi.getRouterApi(defaultZone).get();
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        RouterApi routerApi = neutronApi.getRouterApi(getZone(vimInstance)).get();
         RouterInterface routerInterface = routerApi.addInterfaceForSubnet(routerId, subnetId);
         return routerInterface.getSubnetId();
     }
 
     private String attachPort(VimInstance vimInstance, String routerId, String portId) {
-        init(vimInstance);
         log.debug("Associating Subnet to Router");
-        RouterApi routerApi = neutronApi.getRouterApi(defaultZone).get();
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        RouterApi routerApi = neutronApi.getRouterApi(getZone(vimInstance)).get();
         RouterInterface routerInterface = routerApi.addInterfaceForPort(routerId, portId);
         return routerInterface.getSubnetId();
     }
 
     private String createPort(VimInstance vimInstance, Network network, Subnet subnet) {
         log.debug("Associating Subnet to Router");
-        PortApi portApi = neutronApi.getPortApi(defaultZone);
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        PortApi portApi = neutronApi.getPortApi(getZone(vimInstance));
         Port.CreatePort createPort = Port.createBuilder(network.getExtId()).name("Port_" + network.getName() + "_" + (int) (Math.random() * 1000)).fixedIps(ImmutableSet.of(IP.builder().ipAddress(subnet.getGatewayIp()).build())).build();
         Port port = portApi.create(createPort);
         return port.getId();
@@ -870,15 +830,16 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public boolean deleteSubnet(VimInstance vimInstance, String extId) {
-        init(vimInstance);
-        SubnetApi subnetApi = neutronApi.getSubnetApi(defaultZone);
+        NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        SubnetApi subnetApi = neutronApi.getSubnetApi(getZone(vimInstance));
         boolean isDeleted = subnetApi.delete(extId);
         return isDeleted;
     }
 
-    private List<String> listFreeFloatingIps() {
+    private List<String> listFreeFloatingIps(VimInstance vimInstance) {
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(getZone(vimInstance)).get();
         List<String> floatingIPs = new LinkedList<String>();
-        org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(defaultZone).get();
         Iterator<FloatingIP> floatingIpIterator = floatingIPApi.list().iterator();
         while (floatingIpIterator.hasNext()) {
             FloatingIP floatingIP = floatingIpIterator.next();
@@ -890,7 +851,8 @@ public class OpenstackClient extends VimDriver {
     }
 
     private void associateFloatingIp(VimInstance vimInstance, Server server, String floatingIp) {
-        org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(defaultZone).get();
+        NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+        org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(getZone(vimInstance)).get();
         floatingIPApi.addToServer(floatingIp, server.getExtId());
         log.info("Associated floatingIp " + floatingIp + " to server: " + server.getName());
         server.setFloatingIps(new HashMap<String, String>());
@@ -911,7 +873,6 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public Quota getQuota(VimInstance vimInstance) {
-        init(vimInstance);
         Quota quota = new Quota();
         ContextBuilder contextBuilder = ContextBuilder.newBuilder("openstack-nova").credentials(vimInstance.getUsername(), vimInstance.getPassword()).endpoint(vimInstance.getAuthUrl());
         ComputeServiceContext context = contextBuilder.buildView(ComputeServiceContext.class);
@@ -997,14 +958,33 @@ public class OpenstackClient extends VimDriver {
      * Associated floating IP 863726a7-1cb2-4625-9a7a-89acfc5a4efb
      *
      * @param vimInstance
-     * @param privateIp
-     * @param floatingIp
+     * @param server
+     * @param fip
      * @return
      */
-    public void associateFloatingIpToNetwork(VimInstance vimInstance, String privateIp, String floatingIp) {
-        log.debug(log.getClass().toString());
-        init(vimInstance);
+    public synchronized void associateFloatingIpToNetwork(VimInstance vimInstance, Server server, Map.Entry<String, String> fip) {
+        String floatingIp = null;
+        String privateIp = null;
+        if (fip.getValue() != null) {
+            if (fip.getValue().equals("random")) {
+                privateIp = server.getIps().get(fip.getKey()).get(0);
+                if (privateIp == null)
+                    log.error("Cannot assign FloatingIPs to server " + server.getId() + " . wrong network" + fip.getKey());
+                else {
+                    floatingIp = listFreeFloatingIps(vimInstance).get(0);
+                }
+            } else if (validate(fip.getValue())) {
+                privateIp = server.getIps().get(fip.getKey()).get(0);
+                if (privateIp == null)
+                    log.error("Cannot assign FloatingIPs to server " + server.getId() + " . wrong network" + fip.getKey());
+                else {
+                    floatingIp = fip.getValue();
+                }
+            }
+        } else
+            log.error("Cannot assign FloatingIPs to server " + server.getId() + " . wrong floatingip: " + fip.getValue());
 
+        log.debug(log.getClass().toString());
         ContextBuilder contextBuilder = ContextBuilder.newBuilder("openstack-nova").credentials(vimInstance.getUsername(), vimInstance.getPassword()).endpoint(vimInstance.getAuthUrl());
         ComputeServiceContext context = contextBuilder.buildView(ComputeServiceContext.class);
         Function<Credentials, Access> auth = context.utils().injector().getInstance(Key.get(new TypeLiteral<Function<Credentials, Access>>() {
@@ -1035,8 +1015,8 @@ public class OpenstackClient extends VimDriver {
             // Get floating Ip
             String floatingIpId = null;
             String port_id = null;
-
-            org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(defaultZone).get();
+            NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+            org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(getZone(vimInstance)).get();
             Iterator<FloatingIP> floatingIpIterator = floatingIPApi.list().iterator();
             while (floatingIpIterator.hasNext()) {
                 FloatingIP floatingIP = floatingIpIterator.next();
@@ -1046,8 +1026,8 @@ public class OpenstackClient extends VimDriver {
                     break;
                 }
             }
-
-            for (Port port : neutronApi.getPortApi(defaultZone).list().concat()) {
+            NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+            for (Port port : neutronApi.getPortApi(getZone(vimInstance)).list().concat()) {
                 log.debug(port.toString());
 
                 String ipAddress = port.getFixedIps().iterator().next().getIpAddress();
@@ -1088,6 +1068,7 @@ public class OpenstackClient extends VimDriver {
                 connection.disconnect();
             }
         }
+        server.getFloatingIps().put(fip.getKey(), floatingIp);
     }
 
     @Override
