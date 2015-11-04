@@ -72,7 +72,6 @@ import org.openbaton.vim.drivers.interfaces.VimDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -216,11 +215,14 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public List<NFVImage> listImages(VimInstance vimInstance) {
+
+        log.debug("Listing images");
         GlanceApi glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
         ImageApi imageApi = glanceApi.getImageApi(getZone(vimInstance));
         List<NFVImage> images = new ArrayList<NFVImage>();
         for (ImageDetails jcloudsImage : imageApi.listInDetail().concat()) {
             NFVImage image = new NFVImage();
+            log.debug("Found image: " + jcloudsImage.getName());
             image.setName(jcloudsImage.getName());
             image.setExtId(jcloudsImage.getId());
             image.setMinRam(jcloudsImage.getMinRam());
@@ -580,11 +582,13 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public List<DeploymentFlavour> listFlavors(VimInstance vimInstance) {
+        log.debug("Listing Flavours");
         NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
         FlavorApi flavorApi = novaApi.getFlavorApi(getZone(vimInstance));
         List<DeploymentFlavour> flavors = new ArrayList<DeploymentFlavour>();
         for (org.jclouds.openstack.nova.v2_0.domain.Flavor jcloudsFlavor : flavorApi.listInDetail().concat()) {
             DeploymentFlavour flavor = new DeploymentFlavour();
+            log.debug("Found Flavour: " + jcloudsFlavor.getName());
             flavor.setExtId(jcloudsFlavor.getId());
             flavor.setFlavour_key(jcloudsFlavor.getName());
             flavor.setRam(jcloudsFlavor.getRam());
@@ -607,6 +611,7 @@ public class OpenstackClient extends VimDriver {
 
     private Network createNetwork(VimInstance vimInstance, String name, boolean external, boolean shared) {
         NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+        
         NetworkApi networkApi = neutronApi.getNetworkApi(getZone(vimInstance));
         //CreateNetwork createNetwork = CreateNetwork.createBuilder(name).networkType(NetworkType.fromValue(networkType)).external(external).shared(shared).segmentationId(segmentationId).physicalNetworkName(physicalNetworkName).build();
         CreateNetwork createNetwork = CreateNetwork.createBuilder(name).external(external).shared(shared).build();
@@ -685,12 +690,14 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public List<Network> listNetworks(VimInstance vimInstance) {
+        log.debug("Listing Networks");
         NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
         List<Network> networks = new ArrayList<Network>();
         String tenantId = getTenantId(vimInstance);
         for (org.jclouds.openstack.neutron.v2.domain.Network jcloudsNetwork : neutronApi.getNetworkApi(getZone(vimInstance)).list().concat()) {
-            if (jcloudsNetwork.getTenantId().equals(tenantId)) {
+            if (jcloudsNetwork.getTenantId().equals(tenantId) || jcloudsNetwork.getShared()) {
                 log.trace("OpenstackNetwork: " + jcloudsNetwork.toString());
+                log.debug("Netowrk found: " + jcloudsNetwork.getName());
                 Network network = new Network();
                 network.setName(jcloudsNetwork.getName());
                 network.setExtId(jcloudsNetwork.getId());
