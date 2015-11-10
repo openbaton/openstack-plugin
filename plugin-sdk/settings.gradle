@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-include ':catalogue'
-include ':vim-drivers'
-include ':monitoring'
+//include ':catalogue'
+//include ':vim-drivers'
+//include ':monitoring'
 
-project(':vim-drivers').projectDir = file('../openbaton-libs/vim-drivers')
-project(':monitoring').projectDir = file('../openbaton-libs/monitoring')
-project(':catalogue').projectDir = file('../openbaton-libs/catalogue')
+//project(':vim-drivers').projectDir = file('../openbaton-libs/vim-drivers')
+//project(':monitoring').projectDir = file('../openbaton-libs/monitoring')
+//project(':catalogue').projectDir = file('../openbaton-libs/catalogue')
