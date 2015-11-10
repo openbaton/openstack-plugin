@@ -30,8 +30,8 @@ apply plugin: 'idea'
 apply plugin: 'eclipse'
 apply plugin: 'jacoco'
 
-apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/nexus.upload.plugin.gradle'
-apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/command.line.helper.gradle'
+apply from: 'gradle/gradle/nexus.upload.plugin.gradle'
+apply from: 'gradle/gradle/command.line.helper.gradle'
 
 /**
  * Project settings
@@ -60,18 +60,22 @@ project.ext {
     mainClass = 'org.openbaton.clients.interfaces.client.openstack.Starter'
 }
 
-apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/application.java.gradle'
-apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/run.application.java.gradle'
-apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/git.release.gradle'
+apply from: 'gradle/gradle/application.java.gradle'
+apply from: 'gradle/gradle/run.application.java.gradle'
+apply from: 'gradle/gradle/git.release.gradle'
 
 repositories {
     mavenCentral()
+    maven {
+        url "http://get.openbaton.org:8081/nexus/content/groups/public"
+    }
 }
 
 dependencies {
-    compile project(':catalogue')
-    compile project(':vim-drivers')
-    compile project(':plugin-sdk')
+    compile 'org.openbaton:plugin-sdk:0.15-SNAPSHOT'
+//    compile project(':catalogue')
+//    compile project(':vim-drivers')
+//    compile project(':plugin-sdk')
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
 

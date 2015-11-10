@@ -1,7 +1,0 @@
-
-dependencies {
-    compile project(':vim-drivers')
-    compile project(':monitoring')
-
-    compile 'org.slf4j:slf4j-api:1.7.12'
-}
