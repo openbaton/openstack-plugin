@@ -422,7 +422,7 @@ public class OpenstackTest {
 
     @Test
     @Ignore
-    public void testLaunchInstance() {
+    public void testLaunchInstance() throws VimDriverException {
         Server server = openstackClient.launchInstance(vimInstance, definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata");
         assertEqualsServers(definedServer, server);
         exception.expect(NullPointerException.class);
@@ -447,81 +447,81 @@ public class OpenstackTest {
 
     @Test
     @Ignore
-    public void testListServer() {
+    public void testListServer() throws VimDriverException {
         List<Server> servers = openstackClient.listServer(vimInstance);
         assertEqualsServers(definedServer, servers.get(0));
     }
 
     @Test
     @Ignore
-    public void deleteServerByIdAndWait() {
+    public void deleteServerByIdAndWait() throws VimDriverException {
         doThrow(new NullPointerException()).when(openstackClient);
         openstackClient.deleteServerByIdAndWait(vimInstance, definedServer.getExtId());
     }
 
     @Test
     @Ignore
-    public void testRebootServer() {
+    public void testRebootServer() throws VimDriverException {
         openstackClient.rebootServer(vimInstance, definedServer.getExtId(), RebootType.SOFT);
     }
 
     @Test
     @Ignore
-    public void testDeleteServerById() {
+    public void testDeleteServerById() throws VimDriverException {
         openstackClient.deleteServerById(vimInstance, definedServer.getExtId());
     }
 
     @Test
     @Ignore
-    public void testDeleteServerByIdAndWait() {
+    public void testDeleteServerByIdAndWait() throws VimDriverException {
         openstackClient.deleteServerByIdAndWait(vimInstance, "not_existing_server_ext_id");
     }
 
     @Test
     @Ignore
-    public void testAddImage() {
+    public void testAddImage() throws VimDriverException {
         NFVImage image = openstackClient.addImage(vimInstance, definedImage, "mocked_inputstream".getBytes());
         assertEqualsImages(image, definedImage);
     }
 
     @Test
     @Ignore
-    public void testAddImageByURL() {
+    public void testAddImageByURL() throws VimDriverException {
         NFVImage image = openstackClient.addImage(vimInstance, definedImage, "mocked_image_url");
         assertEqualsImages(image, definedImage);
     }
 
     @Test
     @Ignore
-    public void testUpdateImage() {
+    public void testUpdateImage() throws VimDriverException {
         NFVImage image = openstackClient.updateImage(vimInstance, definedImage);
         assertEqualsImages(image, definedImage);
     }
 
     @Test
     @Ignore
-    public void testDeleteImage() {
+    public void testDeleteImage() throws VimDriverException {
         boolean isDeleted = openstackClient.deleteImage(vimInstance, definedImage);
         Assert.assertEquals(true, isDeleted);
     }
 
     @Test
     @Ignore
-    public void testListImages() {
+    public void testListImages() throws VimDriverException {
         List<NFVImage> images = openstackClient.listImages(vimInstance);
         assertEqualsImages(definedImage, images.get(0));
     }
 
     @Test
     @Ignore
-    public void testCopyImage() {
+    public void testCopyImage() throws VimDriverException {
         NFVImage image = openstackClient.copyImage(vimInstance, definedImage, new byte[0]);
         assertEqualsImages(image, definedImage);
     }
 
     @Test
     @Ignore
-    public void testAddFlavor() {
+    public void testAddFlavor() throws VimDriverException {
         DeploymentFlavour flavor = openstackClient.addFlavor(vimInstance, definedFlavor);
         assertEqualsFlavors(definedFlavor, flavor);
     }
@@ -537,28 +537,28 @@ public class OpenstackTest {
 
     @Test
     @Ignore
-    public void testListFlavors() {
+    public void testListFlavors() throws VimDriverException {
         List<DeploymentFlavour> flavors = openstackClient.listFlavors(vimInstance);
         assertEqualsFlavors(definedFlavor, flavors.get(0));
     }
 
     @Test
     @Ignore
-    public void testCreateNetwork() {
+    public void testCreateNetwork() throws VimDriverException {
         Network network = openstackClient.createNetwork(vimInstance, definedNetwork);
         assertEqualsNetworks(definedNetwork, network);
     }
 
     @Test
     @Ignore
-    public void testUpdateNetwork() {
+    public void testUpdateNetwork() throws VimDriverException {
         Network network = openstackClient.updateNetwork(vimInstance, definedNetwork);
         assertEqualsNetworks(definedNetwork, network);
     }
 
     @Test
     @Ignore
-    public void testDeleteNetwork() {
+    public void testDeleteNetwork() throws VimDriverException {
         boolean isDeleted = openstackClient.deleteNetwork(vimInstance, definedNetwork.getExtId());
         Assert.assertEquals(true, isDeleted);
         isDeleted = openstackClient.deleteNetwork(vimInstance, definedNetwork.getExtId());
@@ -567,7 +567,7 @@ public class OpenstackTest {
 
     @Test
     @Ignore
-    public void testGetNetworkById() {
+    public void testGetNetworkById() throws VimDriverException {
         Network network = openstackClient.getNetworkById(vimInstance, definedNetwork.getExtId());
         assertEqualsNetworks(definedNetwork, network);
         exception.expect(NullPointerException.class);
@@ -576,13 +576,13 @@ public class OpenstackTest {
 
     @Test
     @Ignore
-    public void testGetNetworkIdByName() {
+    public void testGetNetworkIdByName() throws VimDriverException {
 
     }
 
     @Test
     @Ignore
-    public void testGetSubnetsExtIds() {
+    public void testGetSubnetsExtIds() throws VimDriverException {
         List<String> subnetExtIds = openstackClient.getSubnetsExtIds(vimInstance, definedNetwork.getExtId());
         Assert.assertEquals(subnetExtIds.get(0), definedSubnet.getExtId());
         exception.expect(NullPointerException.class);
@@ -592,28 +592,28 @@ public class OpenstackTest {
 
     @Test
     @Ignore
-    public void testListNetworks() {
+    public void testListNetworks() throws VimDriverException {
         List<Network> networks = openstackClient.listNetworks(vimInstance);
         assertEqualsNetworks(definedNetwork, networks.get(0));
     }
 
     @Test
     @Ignore
-    public void testCreateSubnet() {
+    public void testCreateSubnet() throws VimDriverException {
         Subnet subnet = openstackClient.createSubnet(vimInstance, definedNetwork, definedSubnet);
         assertEqualsSubnets(definedSubnet, subnet);
     }
 
     @Test
     @Ignore
-    public void testUpdateSubnet() {
+    public void testUpdateSubnet() throws VimDriverException {
         Subnet subnet = openstackClient.updateSubnet(vimInstance, definedNetwork, definedSubnet);
         assertEqualsSubnets(definedSubnet, subnet);
     }
 
     @Test
     @Ignore
-    public void testDeleteSubnet() {
+    public void testDeleteSubnet() throws VimDriverException {
         boolean isDeleted = openstackClient.deleteSubnet(vimInstance, definedSubnet.getExtId());
         Assert.assertEquals(true, isDeleted);
     }
@@ -633,7 +633,7 @@ public class OpenstackTest {
 
     @Ignore
     @Test
-    public void testGetQuota() {
+    public void testGetQuota() throws VimDriverException {
         Quota quota = openstackClient.getQuota(vimInstance);
         assertEqualsQuotas(definedQuota, quota);
     }
