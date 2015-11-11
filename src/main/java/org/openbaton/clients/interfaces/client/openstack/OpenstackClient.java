@@ -17,6 +17,7 @@
 package org.openbaton.clients.interfaces.client.openstack;
 
 import com.google.common.base.Function;
+import com.google.common.base.Throwables;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
@@ -141,7 +142,8 @@ public class OpenstackClient extends VimDriver {
             return server;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            //throw new VimDriverException(e.getMessage(), Throwables.getStackTraceAsString(e));
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -202,7 +204,7 @@ public class OpenstackClient extends VimDriver {
             serverApi.reboot(extId, type);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -213,7 +215,7 @@ public class OpenstackClient extends VimDriver {
             serverApi.delete(extId);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -263,7 +265,7 @@ public class OpenstackClient extends VimDriver {
             return images;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -305,7 +307,7 @@ public class OpenstackClient extends VimDriver {
             return servers;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -342,7 +344,7 @@ public class OpenstackClient extends VimDriver {
             throw new NullPointerException("Not found Server with ExtId: " + extId + " on VimInstance with name: " + vimInstance.getName());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -402,7 +404,7 @@ public class OpenstackClient extends VimDriver {
             return image;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -451,7 +453,7 @@ public class OpenstackClient extends VimDriver {
             return image;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -466,7 +468,7 @@ public class OpenstackClient extends VimDriver {
             return isDeleted;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -513,7 +515,7 @@ public class OpenstackClient extends VimDriver {
             return image;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -540,7 +542,7 @@ public class OpenstackClient extends VimDriver {
             return image;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -569,7 +571,7 @@ public class OpenstackClient extends VimDriver {
             return image;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -602,7 +604,7 @@ public class OpenstackClient extends VimDriver {
             return flavor;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -639,7 +641,7 @@ public class OpenstackClient extends VimDriver {
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -662,7 +664,7 @@ public class OpenstackClient extends VimDriver {
             return isDeleted;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -685,7 +687,7 @@ public class OpenstackClient extends VimDriver {
             throw new NullPointerException("Flavor with extId: " + extId + " not found on VimInstance with name: " + vimInstance.getName());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -711,7 +713,7 @@ public class OpenstackClient extends VimDriver {
             return flavors;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -744,7 +746,7 @@ public class OpenstackClient extends VimDriver {
             return network;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -775,7 +777,7 @@ public class OpenstackClient extends VimDriver {
             return network;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -794,7 +796,7 @@ public class OpenstackClient extends VimDriver {
             return isDeleted;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -817,7 +819,7 @@ public class OpenstackClient extends VimDriver {
             throw new NullPointerException("Not found Network with ExtId: " + extId + " on VimInstance with name: " + vimInstance.getName());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -836,7 +838,7 @@ public class OpenstackClient extends VimDriver {
             throw new NullPointerException("Not found Network with ExtId: " + extId + " from VimInstance with name: " + vimInstance.getName());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -863,7 +865,7 @@ public class OpenstackClient extends VimDriver {
             return networks;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -905,7 +907,7 @@ public class OpenstackClient extends VimDriver {
             return subnet;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
 
     }
@@ -939,7 +941,7 @@ public class OpenstackClient extends VimDriver {
             return subnet;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -967,7 +969,7 @@ public class OpenstackClient extends VimDriver {
             return null;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -996,7 +998,7 @@ public class OpenstackClient extends VimDriver {
             return router.getId();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -1010,7 +1012,7 @@ public class OpenstackClient extends VimDriver {
             return routerInterface.getSubnetId();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -1024,7 +1026,7 @@ public class OpenstackClient extends VimDriver {
             return routerInterface.getSubnetId();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -1039,7 +1041,7 @@ public class OpenstackClient extends VimDriver {
             return port.getId();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -1058,7 +1060,7 @@ public class OpenstackClient extends VimDriver {
             return isDeleted;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -1079,7 +1081,7 @@ public class OpenstackClient extends VimDriver {
             return floatingIPs;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -1094,7 +1096,7 @@ public class OpenstackClient extends VimDriver {
             log.info("Associated FloatingIP: " + floatingIp + " to VM with hostname: " + server.getName() + " on VimInstance with name: " + vimInstance.getName());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -1113,7 +1115,7 @@ public class OpenstackClient extends VimDriver {
             return tenant_id;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         }
     }
 
@@ -1174,7 +1176,7 @@ public class OpenstackClient extends VimDriver {
             return quota;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         } finally {
             if (connection != null) {
                 connection.disconnect();
@@ -1317,7 +1319,7 @@ public class OpenstackClient extends VimDriver {
             log.info("Associated FloatingIP to VM with hostname: " + server.getName() + " on VimInstance with name: " + vimInstance.getName() + " -> FloatingIP: " + floatingIp);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
         } finally {
             if (connection != null) {
                 connection.disconnect();
