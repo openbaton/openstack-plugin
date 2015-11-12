@@ -18,6 +18,8 @@ package org.openbaton.vim_drivers.test;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
+import com.google.inject.Module;
+import org.jclouds.ContextBuilder;
 import org.jclouds.collect.IterableWithMarkers;
 import org.jclouds.collect.PagedIterable;
 import org.jclouds.collect.PagedIterables;
@@ -48,7 +50,9 @@ import org.jclouds.openstack.v2_0.domain.Resource;
 import org.junit.*;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import org.mockito.Matchers;
+import org.mockito.Mockito;
 import org.openbaton.catalogue.mano.common.DeploymentFlavour;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
@@ -59,6 +63,9 @@ import org.openbaton.catalogue.nfvo.Server;
 import org.openbaton.catalogue.nfvo.Subnet;
 import org.openbaton.clients.interfaces.client.openstack.OpenstackClient;
 import org.openbaton.vim.drivers.exceptions.VimDriverException;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.rmi.RemoteException;
 import java.util.*;
@@ -71,6 +78,8 @@ import static org.mockito.Mockito.*;
 /**
  * Created by mpa on 07.05.15.
  */
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(ContextBuilder.class)
 public class OpenstackTest {
 
     OpenstackClient openstackClient;
@@ -184,7 +193,7 @@ public class OpenstackTest {
     private MyPort expPort;
 
     @Before
-    public void init() throws RemoteException {
+    public void init() throws Exception {
         openstackClient = spy(new OpenstackClient());
         //doNothing().when(openstackClient).init();
 
@@ -196,27 +205,18 @@ public class OpenstackTest {
         definedFlavor = createFlavor();
         definedServer = createServer();
         definedQuota = createQuota();
-        //VimInstance
-//        openstackClient.setVimInstance(vimInstance);
-        //NeutronApi
-        NeutronApi neutronApi = mock(NeutronApi.class);
-//        openstackClient.setNeutronApi(neutronApi);
-        //NovaApi
-        NovaApi novaApi = mock(NovaApi.class);
-//        openstackClient.setNovaApi(novaApi);
-        //Glance Api
-        GlanceApi glanceApi = mock(GlanceApi.class);
-//        openstackClient.setGlanceApi(glanceApi);
-        //TenantId
-//        openstackClient.setTenantId("mocked_tenant_id");
+
+        //Expected Entities
 
         //Flavor
         expFlavor = new MyFlavor(definedFlavor.getExtId(), definedFlavor.getFlavour_key(), new HashSet<Link>(), 512, 1, 2, "", 1.1, 1);
         faultyFlavor = new MyFlavor("not_existing_flavor_ext_id", definedFlavor.getFlavour_key(), new HashSet<Link>(), 512, 1, 2, "", 1.1, 1);
+
         //Image
         expImage = new MyNovaImage(definedImage.getExtId(), definedImage.getName(), new HashSet<Link>(), new Date(), new Date(), "", "", Image.Status.ACTIVE, 1, (int) definedImage.getMinDiskSpace(), (int) definedImage.getMinRam(), new ArrayList<BlockDeviceMapping>(), expImageResource, new HashMap<String, String>());
         faultyImage = new MyNovaImage("not_existing_image_ext_id", definedImage.getName(), new HashSet<Link>(), new Date(), new Date(), "", "", Image.Status.ACTIVE, 1, (int) definedImage.getMinDiskSpace(), (int) definedImage.getMinRam(), new ArrayList<BlockDeviceMapping>(), expImageResource, new HashMap<String, String>());
-        //Server and Resources
+
+        //Server
         ServerExtendedStatus extStatus = new MyExtendedStatus("mocked_id", "mocked_name", 0);
         Map<String, Collection<Address>> addressMap = new HashMap<String, Collection<Address>>();
         Collection<Address> addresses = new HashSet<Address>();
@@ -232,6 +232,10 @@ public class OpenstackTest {
         ServerCreated serverCreated = mock(ServerCreated.class);
         ServerCreated faultyServerCreated = mock(ServerCreated.class);
         ServerCreated errorServerCreated = mock(ServerCreated.class);
+
+        List<org.jclouds.openstack.nova.v2_0.domain.Server> serServerArray = new ArrayList<org.jclouds.openstack.nova.v2_0.domain.Server>();
+        serServerArray.add(expServer);
+        FluentIterable<org.jclouds.openstack.nova.v2_0.domain.Server> serServerFI = FluentIterable.from(serServerArray);
 
         //Port
         expPort = new MyPort("mocked_port_ext_id", NetworkStatus.ACTIVE, VIFType._802_QBG, ImmutableMap.copyOf(new HashMap<String, Object>()), "mocked_qos_queue_id", "mocked_name", "mocked_network_ext_id", true, "mocked_mac_address", ImmutableSet.copyOf(new HashSet<IP>()), "mocked_device_id", "mocked_device_owner", "mocked_tenant_id", ImmutableSet.copyOf(new HashSet<String>()), ImmutableSet.copyOf(new HashSet<AddressPair>()), ImmutableSet.copyOf(new HashSet<ExtraDhcpOption>()), VNICType.NORMAL, "mocked_host_id", ImmutableMap.copyOf(new HashMap<String, Object>()), false, "mocked_profile_id", false, 0);
@@ -252,11 +256,6 @@ public class OpenstackTest {
         resServerArray.add(expServerResource);
         FluentIterable<Resource> resServerFI = FluentIterable.from(resServerArray);
 
-        //Server
-        List<org.jclouds.openstack.nova.v2_0.domain.Server> serServerArray = new ArrayList<org.jclouds.openstack.nova.v2_0.domain.Server>();
-        serServerArray.add(expServer);
-        FluentIterable<org.jclouds.openstack.nova.v2_0.domain.Server> serServerFI = FluentIterable.from(serServerArray);
-
         //Flavor
         List<Flavor> flaFlavorArray = new ArrayList<Flavor>();
         flaFlavorArray.add(expFlavor);
@@ -273,7 +272,33 @@ public class OpenstackTest {
         //Quota
         expQuota = new MyQuota(definedQuota.getTenant(), 10, 10, 10, 10, definedQuota.getRam(), definedQuota.getFloatingIps(), definedQuota.getInstances(), 10, definedQuota.getCores(), 10, 10, definedQuota.getKeyPairs());
 
-        //exception.expect(NullPointerException.class);
+        //jclouds APIs
+        //Neutron API
+        NeutronApi neutronApi = mock(NeutronApi.class);
+        //Nova API
+        NovaApi novaApi = mock(NovaApi.class);
+        //Glance API
+        GlanceApi glanceApi = mock(GlanceApi.class);
+
+        //jclouds ContextBuilder
+        PowerMockito.spy(ContextBuilder.class);
+        ContextBuilder contextBuilder = mock(ContextBuilder.class);
+
+        PowerMockito.doReturn(contextBuilder).when(ContextBuilder.class, "newBuilder", Mockito.anyString());
+
+        when(contextBuilder.endpoint(anyString())).thenReturn(contextBuilder);
+        when(contextBuilder.credentials(anyString(), anyString())).thenReturn(contextBuilder);
+        when(contextBuilder.modules(any(Iterable.class))).thenReturn(contextBuilder);
+        when(contextBuilder.overrides(any(Properties.class))).thenReturn(contextBuilder);
+        when(contextBuilder.buildApi(NovaApi.class)).thenReturn(novaApi);
+        when(contextBuilder.buildApi(GlanceApi.class)).thenReturn(glanceApi);
+        when(contextBuilder.buildApi(NeutronApi.class)).thenReturn(neutronApi);
+
+        //Zones of NovaAPI
+        Set<String> zones = new HashSet<>();
+        zones.add("mocked_zone");
+        when(novaApi.getConfiguredRegions()).thenReturn(zones);
+
         //ServerApi
         ServerApi serverApi = mock(ServerApi.class);
         when(novaApi.getServerApi(anyString())).thenReturn(serverApi);
@@ -420,8 +445,8 @@ public class OpenstackTest {
 //        openstackClient.setZone("mocked");
     }
 
-    @Test
     @Ignore
+    @Test
     public void testLaunchInstance() throws VimDriverException {
         Server server = openstackClient.launchInstance(vimInstance, definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata");
         assertEqualsServers(definedServer, server);
