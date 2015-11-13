@@ -142,7 +142,6 @@ public class OpenstackClient extends VimDriver {
             return server;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            //throw new VimDriverException(e.getMessage(), Throwables.getStackTraceAsString(e));
             throw new VimDriverException(e.getMessage());
         }
     }
@@ -174,7 +173,7 @@ public class OpenstackClient extends VimDriver {
                 throw new VimDriverException(server.getExtendedStatus());
             }
         }
-        if (floatingIp != null || floatingIp.size() > 0) {
+        if (floatingIp != null && floatingIp.size() > 0) {
             log.debug("Assigning FloatingIPs to VM with hostname: " + name);
             log.debug("FloatingIPs are: " + floatingIp);
             if (listFreeFloatingIps(vimInstance).size() >= floatingIp.size()) {
@@ -1228,7 +1227,7 @@ public class OpenstackClient extends VimDriver {
                         floatingIp = listFreeFloatingIps(vimInstance).get(0);
                     }
                 } else if (validate(fip.getValue())) {
-                    log.debug("Associating FloatingIP: defined FloatingIP: " + fip.getValue());
+                    log.debug("Associating FloatingIP: " + fip.getValue());
                     privateIp = server.getIps().get(fip.getKey()).get(0);
                     if (privateIp == null)
                         log.error("Associating FloatingIP: Cannot assign FloatingIPs to server " + server.getId() + " . wrong network" + fip.getKey());
