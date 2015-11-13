@@ -16,13 +16,19 @@
 
 package org.openbaton.vim_drivers.test;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
+import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import org.jclouds.ContextBuilder;
 import org.jclouds.collect.IterableWithMarkers;
 import org.jclouds.collect.PagedIterable;
 import org.jclouds.collect.PagedIterables;
+import org.jclouds.compute.ComputeServiceContext;
+import org.jclouds.compute.Utils;
+import org.jclouds.domain.Credentials;
 import org.jclouds.io.Payload;
 import org.jclouds.openstack.glance.v1_0.GlanceApi;
 import org.jclouds.openstack.glance.v1_0.domain.ContainerFormat;
@@ -31,6 +37,7 @@ import org.jclouds.openstack.glance.v1_0.domain.ImageDetails;
 import org.jclouds.openstack.glance.v1_0.features.ImageApi;
 import org.jclouds.openstack.glance.v1_0.options.CreateImageOptions;
 import org.jclouds.openstack.glance.v1_0.options.UpdateImageOptions;
+import org.jclouds.openstack.keystone.v2_0.domain.*;
 import org.jclouds.openstack.neutron.v2.NeutronApi;
 import org.jclouds.openstack.neutron.v2.domain.*;
 import org.jclouds.openstack.neutron.v2.extensions.RouterApi;
@@ -47,6 +54,7 @@ import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jclouds.openstack.v2_0.domain.Link;
 import org.jclouds.openstack.v2_0.domain.Resource;
+import org.jclouds.rest.AuthorizationException;
 import org.junit.*;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -57,16 +65,19 @@ import org.openbaton.catalogue.mano.common.DeploymentFlavour;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.*;
+import org.openbaton.catalogue.nfvo.Endpoint;
 import org.openbaton.catalogue.nfvo.Network;
 import org.openbaton.catalogue.nfvo.Quota;
 import org.openbaton.catalogue.nfvo.Server;
 import org.openbaton.catalogue.nfvo.Subnet;
 import org.openbaton.clients.interfaces.client.openstack.OpenstackClient;
 import org.openbaton.vim.drivers.exceptions.VimDriverException;
+import org.openbaton.vim.drivers.interfaces.VimDriver;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.net.URI;
 import java.rmi.RemoteException;
 import java.util.*;
 
@@ -189,6 +200,7 @@ public class OpenstackTest {
     private MyNovaImage faultyImage;
     private MyFloatingIP expFreeFloatingIP;
     private MyFloatingIP expUsedFloatingIP;
+    private MyFloatingIP expFreeRealFloatingIP;
     private MyQuota expQuota;
     private MyPort expPort;
 
@@ -221,13 +233,14 @@ public class OpenstackTest {
         Map<String, Collection<Address>> addressMap = new HashMap<String, Collection<Address>>();
         Collection<Address> addresses = new HashSet<Address>();
         addresses.add(new MyAddress("mocked_address", 4));
-        addressMap.put("network", addresses);
+        addressMap.put("mocked_private_network_name", addresses);
         Multimap<String, Address> multimap = ArrayListMultimap.create();
         for (String key : addressMap.keySet()) {
             multimap.putAll(key, addressMap.get(key));
         }
         expServer = new MyServer(definedServer.getExtId(), definedServer.getName(), new HashSet<Link>(), definedServer.getExtId(), "mocked_tenant_id", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.fromValue(definedServer.getStatus()), expImage, expFlavor, "", "", multimap , new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
         faultyServer = new MyServer("faulty_server_mocked_ext_id", "faulty_server", new HashSet<Link>(), definedServer.getExtId(), "", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.ERROR, faultyImage, faultyFlavor, "", "", mock(Multimap.class), new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
+        //faultyServer = new MyServer("faulty_server_mocked_ext_id", "faulty_server", new HashSet<Link>(), definedServer.getExtId(), "", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.ERROR, expImage, expFlavor, "", "", mock(Multimap.class), new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
         errorServer = new MyServer("error_server_mocked_ext_id", "error_server", new HashSet<Link>(), definedServer.getExtId(), "", "", definedServer.getUpdated(), definedServer.getCreated(), "", "mocked_ip4", "mocked_ip6", org.jclouds.openstack.nova.v2_0.domain.Server.Status.ERROR, expImage, expFlavor, "", "", mock(Multimap.class), new HashMap<String, String>(), extStatus, mock(ServerExtendedAttributes.class), "", "");
         ServerCreated serverCreated = mock(ServerCreated.class);
         ServerCreated faultyServerCreated = mock(ServerCreated.class);
@@ -264,7 +277,9 @@ public class OpenstackTest {
         //FloatingIP
         expFreeFloatingIP = new MyFloatingIP("mocked_ext_id", "mocked_free_ip", "mocked_fixed_ip", null, "mocked_pool");
         expUsedFloatingIP = new MyFloatingIP("mocked_ext_id", "mocked_used_ip", "mocked_fixed_ip", "mocked_instance_id", "mocked_pool");
+        expFreeRealFloatingIP = new MyFloatingIP("mocked_ext_id", "0.0.0.0", "0.0.0.0", null, "mocked_pool");
         Set<FloatingIP> fipSet = new HashSet<FloatingIP>();
+        fipSet.add(expFreeRealFloatingIP);
         fipSet.add(expFreeFloatingIP);
         fipSet.add(expUsedFloatingIP);
         FluentIterable<FloatingIP> fipFI = FluentIterable.from(fipSet);
@@ -314,7 +329,8 @@ public class OpenstackTest {
         when(faultyServerCreated.getId()).thenReturn("faulty_server_mocked_ext_id");
         when(errorServerCreated.getId()).thenReturn("error_server_mocked_ext_id");
         when(serverApi.create(eq(definedServer.getName()), anyString(), anyString(), any(CreateServerOptions.class))).thenReturn(serverCreated);
-        when(serverApi.create(eq("faulty_server"), anyString(), anyString(), any(CreateServerOptions.class))).thenReturn(faultyServerCreated);
+        when(serverApi.create(eq("faulty_server"), anyString(), anyString(), any(CreateServerOptions.class))).thenThrow(new AuthorizationException());
+        //when(serverApi.create(eq("faulty_server"), anyString(), anyString(), any(CreateServerOptions.class))).thenReturn(faultyServerCreated);
         when(serverApi.create(eq("error_server"), anyString(), anyString(), any(CreateServerOptions.class))).thenReturn(errorServerCreated);
 
         //ImageApi
@@ -363,13 +379,8 @@ public class OpenstackTest {
         when(networkApi.update(anyString(), any(org.jclouds.openstack.neutron.v2.domain.Network.UpdateNetwork.class))).thenReturn((network));
         when(networkApi.delete(anyString())).thenReturn(true);
         when(networkApi.get(definedNetwork.getExtId())).thenReturn(network);
-        when(networkApi.get("mocked_public_network_id")).thenReturn(publicNetwork);
+        when(networkApi.get("mocked_network_ext_id")).thenReturn(publicNetwork);
         when(networkApi.list()).thenReturn(mock(PagedIterable.class));
-        when(networkApi.list().concat()).thenReturn(FluentIterable.from(new ArrayList<org.jclouds.openstack.neutron.v2.domain.Network>() {{
-            add(network);
-            add(otherNetwork);
-            add(publicNetwork);
-        }}));
         when(network.getName()).thenReturn(definedNetwork.getName());
         when(network.getId()).thenReturn(definedNetwork.getExtId());
         when(network.getSubnets()).thenReturn(ImmutableSet.<String>of(definedSubnet.getExtId()));
@@ -377,12 +388,17 @@ public class OpenstackTest {
         when(network.getExternal()).thenReturn(false);
         when(network.getShared()).thenReturn(false);
         when(publicNetwork.getName()).thenReturn("mocked_public_network_name");
-        when(publicNetwork.getId()).thenReturn("mocked_public_network_id");
+        when(publicNetwork.getId()).thenReturn("mocked_network_ext_id");
         when(publicNetwork.getSubnets()).thenReturn(ImmutableSet.<String>of(definedSubnet.getExtId()));
         when(publicNetwork.getTenantId()).thenReturn("mocked_tenant_id");
         when(publicNetwork.getExternal()).thenReturn(true);
         when(publicNetwork.getShared()).thenReturn(false);
         when(otherNetwork.getTenantId()).thenReturn("mocked_other_tenant_id");
+        when(networkApi.list().concat()).thenReturn(FluentIterable.from(new ArrayList<org.jclouds.openstack.neutron.v2.domain.Network>() {{
+            add(network);
+            add(otherNetwork);
+            add(publicNetwork);
+        }}));
 
         //RouterApi
         RouterApi routerApi = mock(RouterApi.class);
@@ -410,6 +426,17 @@ public class OpenstackTest {
         PortApi portApi = mock(PortApi.class);
         when(neutronApi.getPortApi(anyString())).thenReturn(portApi);
         when(portApi.create(any(Port.CreatePort.class))).thenReturn(expPort);
+        when(portApi.list()).thenReturn(mock(PagedIterable.class));
+        final Port port = mock(Port.class);
+        when(port.getId()).thenReturn("mocked_port_id");
+        ArrayList<IP> ipList = new ArrayList<>();
+        IP ip = mock(IP.class);
+        ipList.add(ip);
+        when(port.getFixedIps()).thenReturn(ImmutableSet.copyOf(ipList));
+        when(portApi.list().concat()).thenReturn(FluentIterable.from(new ArrayList<Port>() {{
+            add(port);
+            add(expPort);
+        }}));
 
         //SubnetApi
         SubnetApi subnetApi = mock(SubnetApi.class);
@@ -435,6 +462,36 @@ public class OpenstackTest {
         when(novaApi.getQuotaApi(anyString())).thenReturn(mock(Optional.class));
         when(novaApi.getQuotaApi(anyString()).get()).thenReturn(quotaApi);
         when(quotaApi.getByTenant(vimInstance.getTenant())).thenReturn(expQuota);
+
+        //Specific stuff
+        ComputeServiceContext computeServiceContext = mock(ComputeServiceContext.class);
+        when(contextBuilder.buildView(ComputeServiceContext.class)).thenReturn(computeServiceContext);
+        Utils utils = mock(Utils.class);
+        when(computeServiceContext.utils()).thenReturn(utils);
+        Injector injector = mock(Injector.class);
+        when(utils.injector()).thenReturn(injector);
+        Function<Credentials, Access> auth = mock(Function.class);
+        when(injector.getInstance(any(Key.class))).thenReturn(auth);
+        Access access = mock(Access.class);
+        when(auth.apply(any(Credentials.class))).thenReturn(access);
+        Token token = mock(Token.class);
+        when(access.getToken()).thenReturn(token);
+        Tenant tenant = mock(Tenant.class);
+        when(tenant.getId()).thenReturn("mocked_tenant_id");
+        Optional<Tenant> tenantOP = mock(Optional.class);
+        when(token.getTenant()).thenReturn(tenantOP);
+        when(tenantOP.get()).thenReturn(tenant);
+        ArrayList<Service> services = new ArrayList<>();
+        Service service = mock(Service.class);
+        services.add(service);
+        when(access.iterator()).thenReturn(services.iterator());
+        when(service.getName()).thenReturn("neutron");
+        ArrayList<org.jclouds.openstack.keystone.v2_0.domain.Endpoint> endpoints = new ArrayList<>();
+        org.jclouds.openstack.keystone.v2_0.domain.Endpoint endpoint = mock(org.jclouds.openstack.keystone.v2_0.domain.Endpoint.class);
+        endpoints.add(endpoint);
+        when(service.iterator()).thenReturn(endpoints.iterator());
+        when(endpoint.getPublicURL()).thenReturn(new URI("mocked_URI"));
+
     }
 
     @Test
@@ -445,17 +502,16 @@ public class OpenstackTest {
 //        openstackClient.setZone("mocked");
     }
 
-    @Ignore
     @Test
     public void testLaunchInstance() throws VimDriverException {
         Server server = openstackClient.launchInstance(vimInstance, definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata");
         assertEqualsServers(definedServer, server);
-        exception.expect(NullPointerException.class);
+        //server = openstackClient.launchInstance(vimInstance, "error_server", definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata");
+        exception.expect(VimDriverException.class);
         server = openstackClient.launchInstance(vimInstance, "faulty_server", definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata");
     }
 
     @Test
-    @Ignore
     public void testLauchInstanceAndWait() throws VimDriverException {
         Server server = openstackClient.launchInstanceAndWait(vimInstance, definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata");
         assertEqualsServers(definedServer, server);
@@ -464,88 +520,78 @@ public class OpenstackTest {
     }
 
     @Test
-    @Ignore
     public void testLauchInstanceAndWaitFloatingIp() throws VimDriverException {
-        Server server = openstackClient.launchInstanceAndWait(vimInstance, definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata", new HashMap<String, String>());
+        HashMap<String, String> fip = new HashMap<>();
+        fip.put("mocked_private_network_name","0.0.0.0");
+        exception.expect(VimDriverException.class);
+        Server server = openstackClient.launchInstanceAndWait(vimInstance, definedServer.getName(), definedServer.getImage().getExtId(), definedServer.getFlavor().getExtId(), "keypair", new HashSet<String>(), new HashSet<String>(), "#userdata", fip);
         assertEqualsServers(definedServer, server);
     }
 
     @Test
-    @Ignore
     public void testListServer() throws VimDriverException {
         List<Server> servers = openstackClient.listServer(vimInstance);
         assertEqualsServers(definedServer, servers.get(0));
     }
 
     @Test
-    @Ignore
     public void deleteServerByIdAndWait() throws VimDriverException {
         doThrow(new NullPointerException()).when(openstackClient);
         openstackClient.deleteServerByIdAndWait(vimInstance, definedServer.getExtId());
     }
 
     @Test
-    @Ignore
     public void testRebootServer() throws VimDriverException {
         openstackClient.rebootServer(vimInstance, definedServer.getExtId(), RebootType.SOFT);
     }
 
     @Test
-    @Ignore
     public void testDeleteServerById() throws VimDriverException {
         openstackClient.deleteServerById(vimInstance, definedServer.getExtId());
     }
 
     @Test
-    @Ignore
     public void testDeleteServerByIdAndWait() throws VimDriverException {
         openstackClient.deleteServerByIdAndWait(vimInstance, "not_existing_server_ext_id");
     }
 
     @Test
-    @Ignore
     public void testAddImage() throws VimDriverException {
         NFVImage image = openstackClient.addImage(vimInstance, definedImage, "mocked_inputstream".getBytes());
         assertEqualsImages(image, definedImage);
     }
 
     @Test
-    @Ignore
     public void testAddImageByURL() throws VimDriverException {
         NFVImage image = openstackClient.addImage(vimInstance, definedImage, "mocked_image_url");
         assertEqualsImages(image, definedImage);
     }
 
     @Test
-    @Ignore
     public void testUpdateImage() throws VimDriverException {
         NFVImage image = openstackClient.updateImage(vimInstance, definedImage);
         assertEqualsImages(image, definedImage);
     }
 
     @Test
-    @Ignore
     public void testDeleteImage() throws VimDriverException {
         boolean isDeleted = openstackClient.deleteImage(vimInstance, definedImage);
         Assert.assertEquals(true, isDeleted);
     }
 
     @Test
-    @Ignore
     public void testListImages() throws VimDriverException {
         List<NFVImage> images = openstackClient.listImages(vimInstance);
         assertEqualsImages(definedImage, images.get(0));
     }
 
     @Test
-    @Ignore
     public void testCopyImage() throws VimDriverException {
         NFVImage image = openstackClient.copyImage(vimInstance, definedImage, new byte[0]);
         assertEqualsImages(image, definedImage);
     }
 
     @Test
-    @Ignore
     public void testAddFlavor() throws VimDriverException {
         DeploymentFlavour flavor = openstackClient.addFlavor(vimInstance, definedFlavor);
         assertEqualsFlavors(definedFlavor, flavor);
@@ -561,28 +607,24 @@ public class OpenstackTest {
     }
 
     @Test
-    @Ignore
     public void testListFlavors() throws VimDriverException {
         List<DeploymentFlavour> flavors = openstackClient.listFlavors(vimInstance);
         assertEqualsFlavors(definedFlavor, flavors.get(0));
     }
 
     @Test
-    @Ignore
     public void testCreateNetwork() throws VimDriverException {
         Network network = openstackClient.createNetwork(vimInstance, definedNetwork);
         assertEqualsNetworks(definedNetwork, network);
     }
 
     @Test
-    @Ignore
     public void testUpdateNetwork() throws VimDriverException {
         Network network = openstackClient.updateNetwork(vimInstance, definedNetwork);
         assertEqualsNetworks(definedNetwork, network);
     }
 
     @Test
-    @Ignore
     public void testDeleteNetwork() throws VimDriverException {
         boolean isDeleted = openstackClient.deleteNetwork(vimInstance, definedNetwork.getExtId());
         Assert.assertEquals(true, isDeleted);
@@ -600,13 +642,11 @@ public class OpenstackTest {
     }
 
     @Test
-    @Ignore
     public void testGetNetworkIdByName() throws VimDriverException {
 
     }
 
     @Test
-    @Ignore
     public void testGetSubnetsExtIds() throws VimDriverException {
         List<String> subnetExtIds = openstackClient.getSubnetsExtIds(vimInstance, definedNetwork.getExtId());
         Assert.assertEquals(subnetExtIds.get(0), definedSubnet.getExtId());
@@ -616,48 +656,41 @@ public class OpenstackTest {
     }
 
     @Test
-    @Ignore
     public void testListNetworks() throws VimDriverException {
         List<Network> networks = openstackClient.listNetworks(vimInstance);
         assertEqualsNetworks(definedNetwork, networks.get(0));
     }
 
     @Test
-    @Ignore
     public void testCreateSubnet() throws VimDriverException {
         Subnet subnet = openstackClient.createSubnet(vimInstance, definedNetwork, definedSubnet);
         assertEqualsSubnets(definedSubnet, subnet);
     }
 
     @Test
-    @Ignore
     public void testUpdateSubnet() throws VimDriverException {
         Subnet subnet = openstackClient.updateSubnet(vimInstance, definedNetwork, definedSubnet);
         assertEqualsSubnets(definedSubnet, subnet);
     }
 
     @Test
-    @Ignore
     public void testDeleteSubnet() throws VimDriverException {
         boolean isDeleted = openstackClient.deleteSubnet(vimInstance, definedSubnet.getExtId());
         Assert.assertEquals(true, isDeleted);
     }
 
     @Test
-    @Ignore
     public void testListSubnets() {
 
     }
 
     @Test
-    @Ignore
     public void testGetType() {
         String type = openstackClient.getType(vimInstance);
         Assert.assertEquals("openstack", type);
     }
 
     @Ignore
-    @Test
     public void testGetQuota() throws VimDriverException {
         Quota quota = openstackClient.getQuota(vimInstance);
         assertEqualsQuotas(definedQuota, quota);
@@ -665,7 +698,7 @@ public class OpenstackTest {
 
     private VimInstance createVimInstance() {
         VimInstance vimInstance = new VimInstance();
-        vimInstance.setName("mock_vim_instance");
+        vimInstance.setName("mocked_vim_instance");
         return vimInstance;
     }
 
