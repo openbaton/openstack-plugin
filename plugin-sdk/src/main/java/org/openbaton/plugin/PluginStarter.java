@@ -21,10 +21,15 @@ import org.openbaton.vim.drivers.interfaces.ClientInterfaces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Created by lto on 09/09/15.
@@ -32,6 +37,8 @@ import java.util.Properties;
 public class PluginStarter {
 
     protected static Logger log = LoggerFactory.getLogger(PluginStarter.class);
+    private static Map<String, PluginListener> plugins = new HashMap<String, PluginListener>();
+    private static Properties properties;
 
     public static void run(Class clazz, final String name, final String registryIp) {
         String nm = "";
@@ -46,12 +53,10 @@ public class PluginStarter {
                 if (interf.getName().equals(ClientInterfaces.class.getName())) {
                     inte = "vim-drivers";
                     break;
-                }
-                else if (interf.getName().equals(ResourcePerformanceManagement.class.getName())) {
+                } else if (interf.getName().equals(ResourcePerformanceManagement.class.getName())) {
                     inte = "monitor";
                     break;
-                }
-                else
+                } else
                     inte = "unknown-interface";
 
             if (inte.equals("unknown-interface")) // no interface found
@@ -91,26 +96,7 @@ public class PluginStarter {
             log.info("Starting plugin with name: " + name);
             log.debug("Registry ip: " + registryIp);
             log.debug("Class to register: " + clazz.getName());
-            Properties properties = new Properties();
-            properties.load(clazz.getResourceAsStream("/plugin.conf.properties"));
-            String inte = "";
-            for (Class interf : clazz.getSuperclass().getInterfaces())
-                if (interf.getName().equals(ClientInterfaces.class.getName())) {
-                    inte = "vim-drivers";
-                    break;
-                }
-                else if (interf.getName().equals(ResourcePerformanceManagement.class.getName())) {
-                    inte = "monitor";
-                    break;
-                }
-                else
-                    inte = "unknown-interface";
-
-            if (inte.equals("unknown-interface")) // no interface found
-                throw new RuntimeException("The plugin class " + clazz.getSimpleName() + " needs to extend or VimDriver or Monitoring classes");
-
-
-            nm = inte + "." + properties.getProperty("type", "unknown") + "." + name;
+            nm = getFinalName(clazz, name);
             StartupPlugin.register(clazz, nm, registryIp, port);
 
         } catch (Exception e) {
@@ -136,5 +122,39 @@ public class PluginStarter {
                 }
             }
         });
+    }
+
+    private static String getFinalName(Class clazz, String name) throws IOException {
+        properties = new Properties();
+        properties.load(clazz.getResourceAsStream("/plugin.conf.properties"));
+        String inte = "";
+        for (Class interf : clazz.getSuperclass().getInterfaces())
+            if (interf.getName().equals(ClientInterfaces.class.getName())) {
+                inte = "vim-drivers";
+                break;
+            } else if (interf.getName().equals(ResourcePerformanceManagement.class.getName())) {
+                inte = "monitor";
+                break;
+            } else
+                inte = "unknown-interface";
+
+        if (inte.equals("unknown-interface")) // no interface found
+            throw new RuntimeException("The plugin class " + clazz.getSimpleName() + " needs to extend or VimDriver or Monitoring classes");
+        return inte + "." + properties.getProperty("type", "unknown") + "." + name;
+    }
+
+    public static void registerPlugin(Class clazz, String name, String brokerIp, int port) throws IOException, TimeoutException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+
+        PluginListener pluginListener = new PluginListener();
+        pluginListener.setPluginId(getFinalName(clazz,name));
+        pluginListener.setPluginInstance(clazz.getConstructor().newInstance());
+        pluginListener.setBrokerIp(brokerIp);
+        pluginListener.setBrokerPort(port);
+        pluginListener.setUsername(properties.getProperty("username","admin"));
+        pluginListener.setPassword(properties.getProperty("password","openbaton"));
+
+        pluginListener.run();
+
+        plugins.put(pluginListener.getPluginId(),pluginListener);
     }
 }
