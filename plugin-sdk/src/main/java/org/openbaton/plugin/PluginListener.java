@@ -2,13 +2,15 @@ package org.openbaton.plugin;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.QueueingConsumer;
 import org.openbaton.catalogue.nfvo.PluginAnswer;
-import org.openbaton.catalogue.nfvo.PluginMessage;
+import org.openbaton.exceptions.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,8 +72,8 @@ public class PluginListener implements Runnable {
         try {
             initRabbitMQ();
 
-            log.info("Awaiting RPC requests");
             while (!exit) {
+                log.info("\nAwaiting RPC requests");
                 QueueingConsumer.Delivery delivery = consumer.nextDelivery();
 
                 BasicProperties props = delivery.getProperties();
@@ -83,15 +85,17 @@ public class PluginListener implements Runnable {
 
                 String message = new String(delivery.getBody());
 
+                log.debug("received: " + message);
                 //Parse the message
-
-                PluginMessage pluginMessage = gson.fromJson(message, PluginMessage.class);
 
                 PluginAnswer answer = new PluginAnswer();
 
-                answer.setAnswer(executeMethod(pluginMessage));
+                answer.setAnswer(executeMethod(message));
 
                 String response = gson.toJson(answer);
+
+                log.debug("Answer is: " + response);
+                log.debug("reply queue is: " + props.getReplyTo());
 
                 channel.basicPublish(exchange, props.getReplyTo(), replyProps, response.getBytes());
 
@@ -111,22 +115,35 @@ public class PluginListener implements Runnable {
             e.printStackTrace();
         } catch (InvocationTargetException e) {
             e.printStackTrace();
+        } catch (NotFoundException e) {
+            e.printStackTrace();
         }
 
 
     }
 
-    private Serializable executeMethod(PluginMessage pluginMessage) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    private Serializable executeMethod(String pluginMessageString) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, NotFoundException {
+
+        JsonObject pluginMessageObject = gson.fromJson(pluginMessageString,JsonObject.class);
+
+        List<Object> params = new ArrayList<Object>();
+
+        for (JsonElement param : pluginMessageObject.get("parameters").getAsJsonArray()){
+            params.add(gson.fromJson(param,Object.class));
+        }
         Class pluginClass = pluginInstance.getClass();
 
-        List<Class> parameterTypes = new ArrayList<Class>();
-        for (Serializable param : pluginMessage.getParameters()) {
-            parameterTypes.add(param.getClass());
-        }
-        Class[] cls = new Class[0];
-        Method method = pluginClass.getMethod(pluginMessage.getMethodName(), parameterTypes.toArray(cls));
+        log.debug("Params are: " + params);
 
-        return (Serializable) method.invoke(pluginInstance, pluginMessage.getParameters());
+        for (Method m : pluginClass.getMethods()){
+            log.debug("Method checking is: " + m.getName() + " with " + m.getParameterTypes().length + " parameters");
+            if (m.getName().equals(pluginMessageObject.get("methodName").getAsString()) && m.getParameterTypes().length == params.size()){
+                return (Serializable) m.invoke(pluginInstance, params.toArray());
+            }
+        }
+
+        throw new NotFoundException("method not found");
+
     }
 
     private void initRabbitMQ() throws IOException, TimeoutException {
