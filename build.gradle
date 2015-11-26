@@ -57,7 +57,7 @@ project.ext {
      * gradle Related Vars
      */
     //------------------------------------------------//
-    mainClass = 'org.openbaton.clients.interfaces.client.openstack.Starter'
+    mainClass = 'org.openbaton.clients.interfaces.client.openstack.OpenstackClient'
 }
 
 apply from: 'gradle/gradle/application.java.gradle'

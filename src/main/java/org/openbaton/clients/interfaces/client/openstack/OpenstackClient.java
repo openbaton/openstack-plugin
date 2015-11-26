@@ -17,7 +17,6 @@
 package org.openbaton.clients.interfaces.client.openstack;
 
 import com.google.common.base.Function;
-import com.google.common.base.Throwables;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
@@ -25,7 +24,6 @@ import com.google.gson.JsonParser;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import javassist.NotFoundException;
 import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
 import org.jclouds.collect.PagedIterable;
@@ -69,18 +67,20 @@ import org.openbaton.catalogue.mano.common.DeploymentFlavour;
 import org.openbaton.catalogue.nfvo.*;
 import org.openbaton.catalogue.nfvo.Network;
 import org.openbaton.catalogue.nfvo.Subnet;
+import org.openbaton.plugin.PluginStarter;
 import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.openbaton.vim.drivers.interfaces.VimDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.*;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
 import static org.jclouds.scriptbuilder.domain.Statements.exec;
@@ -92,12 +92,10 @@ public class OpenstackClient extends VimDriver {
 
     private static final Pattern PATTERN = Pattern.compile(
             "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
-    private Logger log = LoggerFactory.getLogger(this.getClass());
-    //private KeystoneApi keystoneApi;
-
     Iterable<Module> modules;
-
+    //private KeystoneApi keystoneApi;
     Properties overrides;
+    private Logger log = LoggerFactory.getLogger(this.getClass());
 
     public OpenstackClient() throws RemoteException {
         super();
@@ -106,6 +104,13 @@ public class OpenstackClient extends VimDriver {
 
     public static boolean validate(final String ip) {
         return PATTERN.matcher(ip).matches();
+    }
+
+    public static void main(String[] args) throws NoSuchMethodException, IOException, InstantiationException, TimeoutException, IllegalAccessException, InvocationTargetException {
+        if (args.length == 4)
+            PluginStarter.registerPlugin(OpenstackClient.class, args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]));
+        else
+            PluginStarter.registerPlugin(OpenstackClient.class, "openstack", "localhost", 5672, 10);
     }
 
     public void init() {
@@ -667,7 +672,6 @@ public class OpenstackClient extends VimDriver {
         }
     }
 
-
     private DeploymentFlavour getFlavorById(VimInstance vimInstance, String extId) throws VimDriverException {
         log.debug("Finding Flavor with ExtId: " + extId + " on VimInstance with name: " + vimInstance.getName());
         try {
@@ -798,7 +802,6 @@ public class OpenstackClient extends VimDriver {
             throw new VimDriverException(e.getMessage());
         }
     }
-
 
     @Override
     public Network getNetworkById(VimInstance vimInstance, String extId) throws VimDriverException {
