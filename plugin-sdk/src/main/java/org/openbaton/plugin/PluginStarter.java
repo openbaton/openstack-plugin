@@ -143,18 +143,20 @@ public class PluginStarter {
         return inte + "." + properties.getProperty("type", "unknown") + "." + name;
     }
 
-    public static void registerPlugin(Class clazz, String name, String brokerIp, int port) throws IOException, TimeoutException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+    public static void registerPlugin(Class clazz, String name, String brokerIp, int port, int consumers) throws IOException, TimeoutException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
 
-        PluginListener pluginListener = new PluginListener();
-        pluginListener.setPluginId(getFinalName(clazz,name));
-        pluginListener.setPluginInstance(clazz.getConstructor().newInstance());
-        pluginListener.setBrokerIp(brokerIp);
-        pluginListener.setBrokerPort(port);
-        pluginListener.setUsername(properties.getProperty("username","admin"));
-        pluginListener.setPassword(properties.getProperty("password","openbaton"));
+        for (int i = 0 ; i<consumers ; i++ ) {
+            PluginListener pluginListener = new PluginListener();
+            pluginListener.setPluginId(getFinalName(clazz, name));
+            pluginListener.setPluginInstance(clazz.getConstructor().newInstance());
+            pluginListener.setBrokerIp(brokerIp);
+            pluginListener.setBrokerPort(port);
+            pluginListener.setUsername(properties.getProperty("username", "admin"));
+            pluginListener.setPassword(properties.getProperty("password", "openbaton"));
 
-        pluginListener.run();
+            pluginListener.run();
+            plugins.put(pluginListener.getPluginId(),pluginListener);
+        }
 
-        plugins.put(pluginListener.getPluginId(),pluginListener);
     }
 }

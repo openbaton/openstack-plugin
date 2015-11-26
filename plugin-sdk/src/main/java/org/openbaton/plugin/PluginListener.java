@@ -86,7 +86,6 @@ public class PluginListener implements Runnable {
                 String message = new String(delivery.getBody());
 
                 log.debug("received: " + message);
-                //Parse the message
 
                 PluginAnswer answer = new PluginAnswer();
 
@@ -124,12 +123,14 @@ public class PluginListener implements Runnable {
 
     private Serializable executeMethod(String pluginMessageString) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, NotFoundException {
 
-        JsonObject pluginMessageObject = gson.fromJson(pluginMessageString,JsonObject.class);
+        JsonObject pluginMessageObject = gson.fromJson(pluginMessageString, JsonObject.class);
 
         List<Object> params = new ArrayList<Object>();
 
         for (JsonElement param : pluginMessageObject.get("parameters").getAsJsonArray()){
-            params.add(gson.fromJson(param,Object.class));
+            Object p = gson.fromJson(param, Object.class);
+            if (p!= null)
+                params.add(p);
         }
         Class pluginClass = pluginInstance.getClass();
 
@@ -138,7 +139,20 @@ public class PluginListener implements Runnable {
         for (Method m : pluginClass.getMethods()){
             log.debug("Method checking is: " + m.getName() + " with " + m.getParameterTypes().length + " parameters");
             if (m.getName().equals(pluginMessageObject.get("methodName").getAsString()) && m.getParameterTypes().length == params.size()){
-                return (Serializable) m.invoke(pluginInstance, params.toArray());
+                if (m.getReturnType().equals(Void.class)) {
+                    if (params.size() != 0)
+                        return (Serializable) m.invoke(pluginInstance, params.toArray());
+                    else
+                        return (Serializable) m.invoke(pluginInstance);
+                }
+                else{
+                    if (params.size() != 0)
+                        m.invoke(pluginInstance, params.toArray());
+                    else
+                        m.invoke(pluginInstance);
+
+                    return "{}";
+                }
             }
         }
 
