@@ -139,7 +139,7 @@ public class PluginListener implements Runnable {
         for (Method m : pluginClass.getMethods()){
             log.debug("Method checking is: " + m.getName() + " with " + m.getParameterTypes().length + " parameters");
             if (m.getName().equals(pluginMessageObject.get("methodName").getAsString()) && m.getParameterTypes().length == params.size()){
-                if (m.getReturnType().equals(Void.class)) {
+                if (!m.getReturnType().equals(Void.class)) {
                     if (params.size() != 0)
                         return (Serializable) m.invoke(pluginInstance, params.toArray());
                     else

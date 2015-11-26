@@ -29,6 +29,8 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -39,6 +41,7 @@ public class PluginStarter {
     protected static Logger log = LoggerFactory.getLogger(PluginStarter.class);
     private static Map<String, PluginListener> plugins = new HashMap<String, PluginListener>();
     private static Properties properties;
+    private static ExecutorService executor;
 
     public static void run(Class clazz, final String name, final String registryIp) {
         String nm = "";
@@ -145,6 +148,8 @@ public class PluginStarter {
 
     public static void registerPlugin(Class clazz, String name, String brokerIp, int port, int consumers) throws IOException, TimeoutException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
 
+        executor = Executors.newFixedThreadPool(consumers);
+
         for (int i = 0 ; i<consumers ; i++ ) {
             PluginListener pluginListener = new PluginListener();
             pluginListener.setPluginId(getFinalName(clazz, name));
@@ -154,8 +159,7 @@ public class PluginStarter {
             pluginListener.setUsername(properties.getProperty("username", "admin"));
             pluginListener.setPassword(properties.getProperty("password", "openbaton"));
 
-            pluginListener.run();
-            plugins.put(pluginListener.getPluginId(),pluginListener);
+            executor.execute(pluginListener);
         }
 
     }
