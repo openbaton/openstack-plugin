@@ -15,7 +15,7 @@
 
 package org.openbaton.plugin;
 
-import org.openbaton.monitoring.interfaces.ResourcePerformanceManagement;
+import org.openbaton.monitoring.interfaces.VirtualisedResourcesPerformanceManagement;
 import org.openbaton.plugin.utils.StartupPlugin;
 import org.openbaton.vim.drivers.interfaces.ClientInterfaces;
 import org.slf4j.Logger;
@@ -56,7 +56,7 @@ public class PluginStarter {
                 if (interf.getName().equals(ClientInterfaces.class.getName())) {
                     inte = "vim-drivers";
                     break;
-                } else if (interf.getName().equals(ResourcePerformanceManagement.class.getName())) {
+                } else if (interf.getName().equals(VirtualisedResourcesPerformanceManagement.class.getName())) {
                     inte = "monitor";
                     break;
                 } else
@@ -135,7 +135,7 @@ public class PluginStarter {
             if (interf.getName().equals(ClientInterfaces.class.getName())) {
                 inte = "vim-drivers";
                 break;
-            } else if (interf.getName().equals(ResourcePerformanceManagement.class.getName())) {
+            } else if (interf.getName().equals(VirtualisedResourcesPerformanceManagement.class.getName())) {
                 inte = "monitor";
                 break;
             } else

@@ -1,9 +1,6 @@
 package org.openbaton.plugin;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -19,6 +16,7 @@ import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -132,6 +130,7 @@ public class PluginListener implements Runnable {
             if (p!= null)
                 params.add(p);
         }
+
         Class pluginClass = pluginInstance.getClass();
 
         log.debug("Params are: " + params);
@@ -140,14 +139,21 @@ public class PluginListener implements Runnable {
             log.debug("Method checking is: " + m.getName() + " with " + m.getParameterTypes().length + " parameters");
             if (m.getName().equals(pluginMessageObject.get("methodName").getAsString()) && m.getParameterTypes().length == params.size()){
                 if (!m.getReturnType().equals(Void.class)) {
-                    if (params.size() != 0)
+                    if (params.size() != 0) {
+                        params = getParameters(pluginMessageObject.get("parameters").getAsJsonArray(), m.getParameterTypes());
                         return (Serializable) m.invoke(pluginInstance, params.toArray());
+                    }
                     else
                         return (Serializable) m.invoke(pluginInstance);
                 }
                 else{
-                    if (params.size() != 0)
+                    if (params.size() != 0) {
+                        params = getParameters(pluginMessageObject.get("parameters").getAsJsonArray(), m.getParameterTypes());
+                        for (Object p : params){
+                            log.debug("param class is: " + p.getClass());
+                        }
                         m.invoke(pluginInstance, params.toArray());
+                    }
                     else
                         m.invoke(pluginInstance);
 
@@ -158,6 +164,14 @@ public class PluginListener implements Runnable {
 
         throw new NotFoundException("method not found");
 
+    }
+
+    private List<Object> getParameters(JsonArray parameters, Class<?>[] parameterTypes) {
+        List<Object> res = new LinkedList<Object>();
+        for (int i =0 ; i < parameters.size(); i++){
+            res.add( gson.fromJson(parameters.get(i), parameterTypes[i]) );
+        }
+        return res;
     }
 
     private void initRabbitMQ() throws IOException, TimeoutException {
