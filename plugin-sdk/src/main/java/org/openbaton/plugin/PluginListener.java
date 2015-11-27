@@ -87,7 +87,11 @@ public class PluginListener implements Runnable {
 
                 PluginAnswer answer = new PluginAnswer();
 
-                answer.setAnswer(executeMethod(message));
+                try {
+                    answer.setAnswer(executeMethod(message));
+                } catch (InvocationTargetException e) {
+                    answer.setException(e.getTargetException());
+                }
 
                 String response = gson.toJson(answer);
 
@@ -109,8 +113,6 @@ public class PluginListener implements Runnable {
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
             e.printStackTrace();
         } catch (NotFoundException e) {
             e.printStackTrace();
@@ -157,7 +159,7 @@ public class PluginListener implements Runnable {
                     else
                         m.invoke(pluginInstance);
 
-                    return "{}";
+                    return null;
                 }
             }
         }
