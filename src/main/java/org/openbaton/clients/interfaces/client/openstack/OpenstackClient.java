@@ -127,7 +127,7 @@ public class OpenstackClient extends VimDriver {
         //String tenantId = getTenantId(vimInstance);
     }
 
-    public String getZone(VimInstance vimInstance) {
+    private String getZone(VimInstance vimInstance) {
         NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
         Set<String> zones = novaApi.getConfiguredRegions();
         String zone = zones.iterator().next();
@@ -390,7 +390,8 @@ public class OpenstackClient extends VimDriver {
                 bufferedPayload.flush();
                 jcloudsPayload = new ByteArrayPayload(bufferedPayload.toByteArray());
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
+                throw new VimDriverException(e.getMessage());
             }
             ImageDetails imageDetails = imageApi.create(name, jcloudsPayload, new CreateImageOptions[]{createImageOptions});
             log.debug("Added jclouds Image: " + imageDetails + " to VimInstance with name: " + vimInstance.getName());
@@ -488,7 +489,6 @@ public class OpenstackClient extends VimDriver {
         image.setIsPublic(updatedImage.isPublic());
         image.setDiskFormat(updatedImage.getDiskFormat());
         image.setContainerFormat(updatedImage.getContainerFormat());
-        log.info("Updated Image with name: " + image.getName() + " (ExtId: " + image.getExtId() + ") on VimInstance with name: " + vimInstance.getName());
         return image;
     }
 
@@ -818,6 +818,7 @@ public class OpenstackClient extends VimDriver {
             log.info("Found Network with ExtId: " + extId + " on VimInstance with name: " + vimInstance.getName());
             return network;
         } catch (NullPointerException e) {
+            log.error("Not found Network with ExtId: " + extId + " on VimInstance with name: " + vimInstance.getName(), e);
             throw new NullPointerException("Not found Network with ExtId: " + extId + " on VimInstance with name: " + vimInstance.getName());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -837,7 +838,8 @@ public class OpenstackClient extends VimDriver {
             log.info("Listed all external SubnetIDs for Network with ExtId: " + extId + " from VimInstance with name: " + vimInstance.getName() + " -> external Subnet IDs: " + subnets);
             return subnets;
         } catch (NullPointerException e) {
-            throw new NullPointerException("Not found Network with ExtId: " + extId + " from VimInstance with name: " + vimInstance.getName());
+            log.error("Not found Network with ExtId: " + extId + " on VimInstance with name: " + vimInstance.getName(), e);
+            throw new NullPointerException("Not found Network with ExtId: " + extId + " on VimInstance with name: " + vimInstance.getName());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new VimDriverException(e.getMessage());
@@ -900,7 +902,6 @@ public class OpenstackClient extends VimDriver {
                 log.debug("Not found Router");
                 routerId = createRouter(vimInstance);
             }
-            //attachInterface(vimInstance, routerId, subnet.getExtId());
             if (routerId != null) {
                 String portId = createPort(vimInstance, network, subnet);
                 attachPort(vimInstance, routerId, portId);
@@ -998,20 +999,6 @@ public class OpenstackClient extends VimDriver {
             Router router = routerApi.create(options);
             log.info("Created a Router that is connected with external Network on VimInstance with name: " + vimInstance.getName());
             return router.getId();
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage());
-        }
-    }
-
-    private String attachInterface(VimInstance vimInstance, String routerId, String subnetId) throws VimDriverException {
-        log.debug("Attaching Subnet with ExtId: " + subnetId + " to Router with ExtId: " + routerId + " on VimInstnace with name: " + vimInstance);
-        try {
-            NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
-            RouterApi routerApi = neutronApi.getRouterApi(getZone(vimInstance)).get();
-            RouterInterface routerInterface = routerApi.addInterfaceForSubnet(routerId, subnetId);
-            log.info("Attached Subnet with ExtId: " + subnetId + " to Router with ExtId: " + routerId + " on VimInstnace with name: " + vimInstance);
-            return routerInterface.getSubnetId();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new VimDriverException(e.getMessage());
@@ -1288,10 +1275,14 @@ public class OpenstackClient extends VimDriver {
             for (Port port : neutronApi.getPortApi(getZone(vimInstance)).list().concat()) {
                 log.debug("Associating FloatingIP: Port: " + port.toString());
 
-                String ipAddress = port.getFixedIps().iterator().next().getIpAddress();
-                log.debug("IP PORT: " + ipAddress + " === " + privateIp);
-                if (ipAddress.equals(privateIp)) {
-                    port_id = port.getId();
+                if (port.getFixedIps().iterator().hasNext()) {
+                    String ipAddress = port.getFixedIps().iterator().next().getIpAddress();
+                    log.debug("IP PORT: " + ipAddress + " === " + privateIp);
+                    if (ipAddress.equals(privateIp)) {
+                        port_id = port.getId();
+                    }
+                } else {
+                    log.warn("Associating FloatingIP: Not found any IP assgined to this Port");
                 }
             }
 
