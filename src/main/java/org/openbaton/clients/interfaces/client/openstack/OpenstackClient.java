@@ -130,7 +130,32 @@ public class OpenstackClient extends VimDriver {
     public String getZone(VimInstance vimInstance) {
         NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
         Set<String> zones = novaApi.getConfiguredRegions();
-        String zone = zones.iterator().next();
+        log.debug("Available openstack environment zones: " + zones);
+        String zone = null;
+        if (vimInstance.getLocation() != null) {
+            if (vimInstance.getLocation().getName() != null) {
+                log.debug("Finding Location of openstack environment: " + vimInstance.getLocation().getName());
+                for (String region : zones) {
+                    if (region.equals(vimInstance.getLocation().getName())) {
+                        zone = region;
+                        log.debug("Found Location of openstack environment: " + zone);
+                        break;
+                    }
+                }
+                if (zone == null) {
+                    log.warn("Not found Location '" + vimInstance.getLocation().getName() + "'of openstack environment. Selecting a random one...");
+                }
+            } else {
+                log.warn("Location of openstack environment is not defined properly -> Missing Name of the Location. Selecting a random one...");
+            }
+        } else {
+            log.debug("Location of openstack environment is not defined. Selecting a random one...");
+        }
+        if (zone == null) {
+            log.debug("Selecting a random Location of openstack environment from: " + zones);
+            zone = zones.iterator().next();
+            log.debug("Selected Location of openstack environment: '" + zone + "'");
+        }
         return zone;
     }
 
@@ -745,6 +770,10 @@ public class OpenstackClient extends VimDriver {
             network.setExtId(jcloudsNetwork.getId());
             network.setExternal(jcloudsNetwork.getExternal());
             network.setShared(jcloudsNetwork.getShared());
+            network.setSubnets(new HashSet<Subnet>());
+            for (String subnetId : jcloudsNetwork.getSubnets()) {
+                network.getSubnets().add(getSubnetById(vimInstance, subnetId));
+            }
             log.info("Created Network with name: " + name + " on VimInstance with name: " + vimInstance.getName() + " -> Network: " + network);
             return network;
         } catch (Exception e) {
@@ -776,6 +805,10 @@ public class OpenstackClient extends VimDriver {
             network.setExtId(jcloudsNetwork.getId());
             network.setExternal(jcloudsNetwork.getExternal());
             network.setShared(jcloudsNetwork.getShared());
+            network.setSubnets(new HashSet<Subnet>());
+            for (String subnetId : jcloudsNetwork.getSubnets()) {
+                network.getSubnets().add(getSubnetById(vimInstance, subnetId));
+            }
             log.debug("Updated Network with name: " + name + " on VimInstance with name: " + vimInstance.getName() + " -> Network: " + network);
             return network;
         } catch (Exception e) {
@@ -815,7 +848,11 @@ public class OpenstackClient extends VimDriver {
             network.setExtId(jcloudsNetwork.getId());
             network.setExternal(jcloudsNetwork.getExternal());
             network.setShared(jcloudsNetwork.getShared());
-            log.info("Found Network with ExtId: " + extId + " on VimInstance with name: " + vimInstance.getName());
+            network.setSubnets(new HashSet<Subnet>());
+            for (String subnetId : jcloudsNetwork.getSubnets()) {
+                network.getSubnets().add(getSubnetById(vimInstance, subnetId));
+            }
+            log.info("Found Network with ExtId: " + extId + " on VimInstance with name: " + vimInstance.getName() + " -> " + network);
             return network;
         } catch (NullPointerException e) {
             throw new NullPointerException("Not found Network with ExtId: " + extId + " on VimInstance with name: " + vimInstance.getName());
@@ -859,6 +896,10 @@ public class OpenstackClient extends VimDriver {
                     network.setExtId(jcloudsNetwork.getId());
                     network.setExternal(jcloudsNetwork.getExternal());
                     network.setShared(jcloudsNetwork.getShared());
+                    network.setSubnets(new HashSet<Subnet>());
+                    for (String subnetId : jcloudsNetwork.getSubnets()) {
+                        network.getSubnets().add(getSubnetById(vimInstance, subnetId));
+                    }
                     log.debug("Found Network: " + network);
                     networks.add(network);
                 }
@@ -869,6 +910,28 @@ public class OpenstackClient extends VimDriver {
             log.error(e.getMessage(), e);
             throw new VimDriverException(e.getMessage());
         }
+    }
+
+    private Subnet getSubnetById(VimInstance vimInstance, String extId) throws VimDriverException {
+        log.debug("Getting Subnet with extId: " + extId + " from VimInstance with name: " + vimInstance.getName());
+        try {
+            NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+            SubnetApi subnetApi = neutronApi.getSubnetApi(getZone(vimInstance));
+            org.jclouds.openstack.neutron.v2.domain.Subnet jcloudsSubnet = subnetApi.get(extId);
+            log.debug("Got jclouds Subnet: " + jcloudsSubnet);
+            Subnet subnet = new Subnet();
+            subnet.setExtId(jcloudsSubnet.getId());
+            subnet.setName(jcloudsSubnet.getName());
+            subnet.setCidr(jcloudsSubnet.getCidr());
+            subnet.setGatewayIp(jcloudsSubnet.getGatewayIp());
+            subnet.setNetworkId(jcloudsSubnet.getNetworkId());
+            log.info("Found Subnet with extId: " + extId + " on VimInstance with name: " + vimInstance.getName() + " -> Subnet: " + subnet);
+            return subnet;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
+        }
+
     }
 
     @Override
