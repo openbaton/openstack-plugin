@@ -40,6 +40,7 @@ import org.jclouds.openstack.glance.v1_0.domain.Image;
 import org.jclouds.openstack.glance.v1_0.domain.ImageDetails;
 import org.jclouds.openstack.glance.v1_0.features.ImageApi;
 import org.jclouds.openstack.glance.v1_0.options.CreateImageOptions;
+import org.jclouds.openstack.glance.v1_0.options.ListImageOptions;
 import org.jclouds.openstack.glance.v1_0.options.UpdateImageOptions;
 import org.jclouds.openstack.keystone.v2_0.config.CredentialTypes;
 import org.jclouds.openstack.keystone.v2_0.config.KeystoneProperties;
@@ -277,8 +278,10 @@ public class OpenstackClient extends VimDriver {
         try {
             GlanceApi glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
             ImageApi imageApi = glanceApi.getImageApi(getZone(vimInstance));
+            ListImageOptions listImageOptions = new ListImageOptions();
+            listImageOptions.limit(1000);
             List<NFVImage> images = new ArrayList<NFVImage>();
-            for (ImageDetails jcloudsImage : imageApi.listInDetail().concat()) {
+            for (ImageDetails jcloudsImage : imageApi.listInDetail(listImageOptions).toList()) {
                 NFVImage image = new NFVImage();
                 log.debug("Found image: " + jcloudsImage.getName());
                 image.setName(jcloudsImage.getName());
