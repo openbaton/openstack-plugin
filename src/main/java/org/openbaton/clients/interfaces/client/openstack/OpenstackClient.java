@@ -36,6 +36,7 @@ import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 import org.jclouds.openstack.glance.v1_0.GlanceApi;
 import org.jclouds.openstack.glance.v1_0.domain.ContainerFormat;
 import org.jclouds.openstack.glance.v1_0.domain.DiskFormat;
+import org.jclouds.openstack.glance.v1_0.domain.Image;
 import org.jclouds.openstack.glance.v1_0.domain.ImageDetails;
 import org.jclouds.openstack.glance.v1_0.features.ImageApi;
 import org.jclouds.openstack.glance.v1_0.options.CreateImageOptions;
@@ -61,6 +62,7 @@ import org.jclouds.openstack.nova.v2_0.domain.RebootType;
 import org.jclouds.openstack.nova.v2_0.features.FlavorApi;
 import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
+import org.jclouds.openstack.v2_0.domain.Resource;
 import org.jclouds.scriptbuilder.ScriptBuilder;
 import org.jclouds.scriptbuilder.domain.OsFamily;
 import org.openbaton.catalogue.mano.common.DeploymentFlavour;
@@ -326,8 +328,16 @@ public class OpenstackClient extends VimDriver {
                     server.setFloatingIps(new HashMap<String, String>());
                     server.setCreated(jcloudsServer.getCreated());
                     server.setUpdated(jcloudsServer.getUpdated());
-                    server.setImage(getImageById(vimInstance, jcloudsServer.getImage().getId()));
-                    server.setFlavor(getFlavorById(vimInstance, jcloudsServer.getFlavor().getId()));
+                    Resource image = jcloudsServer.getImage();
+                    if (image != null)
+                        server.setImage(getImageById(vimInstance, image.getId()));
+                    else
+                        log.warn("The image this server is using was deleted");
+                    Resource flavor = jcloudsServer.getFlavor();
+                    if (flavor != null)
+                        server.setFlavor(getFlavorById(vimInstance, flavor.getId()));
+                    else
+                        log.warn("The flavor this server is using was deleted");
                     log.debug("Found VM: " + server);
                     servers.add(server);
                 }
@@ -364,8 +374,16 @@ public class OpenstackClient extends VimDriver {
             server.setFloatingIps(new HashMap<String, String>());
             server.setCreated(jcloudsServer.getCreated());
             server.setUpdated(jcloudsServer.getUpdated());
-            server.setImage(getImageById(vimInstance, jcloudsServer.getImage().getId()));
-            server.setFlavor(getFlavorById(vimInstance, jcloudsServer.getFlavor().getId()));
+            Resource image = jcloudsServer.getImage();
+            if (image != null)
+                server.setImage(getImageById(vimInstance, image.getId()));
+            else
+                log.warn("The image this server is using was deleted");
+            Resource flavor = jcloudsServer.getFlavor();
+            if (flavor != null)
+                server.setFlavor(getFlavorById(vimInstance, flavor.getId()));
+            else
+                log.warn("The flavor this server is using was deleted");
             log.info("Found VM by ID: " + extId + " on VimInstance with name: " + vimInstance.getName() + " -> VM: " + server);
             return server;
         } catch (NullPointerException e) {
