@@ -148,19 +148,25 @@ public class PluginStarter {
 
     public static void registerPlugin(Class clazz, String name, String brokerIp, int port, int consumers) throws IOException, TimeoutException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
 
-        executor = Executors.newFixedThreadPool(consumers);
+        String username = properties.getProperty("username", "admin");
+        String password = properties.getProperty("password", "openbaton");
+        registerPlugin(clazz, name, brokerIp, port, consumers, username, password);
 
+    }
+
+    public static void registerPlugin(Class clazz, String name, String brokerIp, int port, int consumers, String username, String password) throws IOException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+
+        executor = Executors.newFixedThreadPool(consumers);
         for (int i = 0 ; i<consumers ; i++ ) {
             PluginListener pluginListener = new PluginListener();
             pluginListener.setPluginId(getFinalName(clazz, name));
             pluginListener.setPluginInstance(clazz.getConstructor().newInstance());
             pluginListener.setBrokerIp(brokerIp);
             pluginListener.setBrokerPort(port);
-            pluginListener.setUsername(properties.getProperty("username", "admin"));
-            pluginListener.setPassword(properties.getProperty("password", "openbaton"));
+            pluginListener.setUsername(username);
+            pluginListener.setPassword(password);
 
             executor.execute(pluginListener);
         }
-
     }
 }
