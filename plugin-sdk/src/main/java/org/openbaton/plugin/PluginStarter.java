@@ -128,8 +128,7 @@ public class PluginStarter {
     }
 
     private static String getFinalName(Class clazz, String name) throws IOException {
-        properties = new Properties();
-        properties.load(clazz.getResourceAsStream("/plugin.conf.properties"));
+        getProperties(clazz);
         String inte = "";
         for (Class interf : clazz.getSuperclass().getInterfaces())
             if (interf.getName().equals(ClientInterfaces.class.getName())) {
@@ -146,8 +145,13 @@ public class PluginStarter {
         return inte + "." + properties.getProperty("type", "unknown") + "." + name;
     }
 
-    public static void registerPlugin(Class clazz, String name, String brokerIp, int port, int consumers) throws IOException, TimeoutException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+    private static void getProperties(Class clazz) throws IOException {
+        properties = new Properties();
+        properties.load(clazz.getResourceAsStream("/plugin.conf.properties"));
+    }
 
+    public static void registerPlugin(Class clazz, String name, String brokerIp, int port, int consumers) throws IOException, TimeoutException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        getProperties(clazz);
         String username = properties.getProperty("username", "admin");
         String password = properties.getProperty("password", "openbaton");
         registerPlugin(clazz, name, brokerIp, port, consumers, username, password);
@@ -155,7 +159,8 @@ public class PluginStarter {
     }
 
     public static void registerPlugin(Class clazz, String name, String brokerIp, int port, int consumers, String username, String password) throws IOException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-
+        if (properties==null)
+            getProperties(clazz);
         executor = Executors.newFixedThreadPool(consumers);
         for (int i = 0 ; i<consumers ; i++ ) {
             PluginListener pluginListener = new PluginListener();
