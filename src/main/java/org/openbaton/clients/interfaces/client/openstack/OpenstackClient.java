@@ -36,7 +36,6 @@ import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 import org.jclouds.openstack.glance.v1_0.GlanceApi;
 import org.jclouds.openstack.glance.v1_0.domain.ContainerFormat;
 import org.jclouds.openstack.glance.v1_0.domain.DiskFormat;
-import org.jclouds.openstack.glance.v1_0.domain.Image;
 import org.jclouds.openstack.glance.v1_0.domain.ImageDetails;
 import org.jclouds.openstack.glance.v1_0.features.ImageApi;
 import org.jclouds.openstack.glance.v1_0.options.CreateImageOptions;
@@ -93,10 +92,8 @@ import static org.jclouds.scriptbuilder.domain.Statements.exec;
  */
 public class OpenstackClient extends VimDriver {
 
-    private static final Pattern PATTERN = Pattern.compile(
-            "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
+    private static final Pattern PATTERN = Pattern.compile("^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
     Iterable<Module> modules;
-    //private KeystoneApi keystoneApi;
     Properties overrides;
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -110,7 +107,9 @@ public class OpenstackClient extends VimDriver {
     }
 
     public static void main(String[] args) throws NoSuchMethodException, IOException, InstantiationException, TimeoutException, IllegalAccessException, InvocationTargetException {
-        if (args.length == 4)
+        if (args.length == 6)
+            PluginStarter.registerPlugin(OpenstackClient.class, args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]), args[4],args[5]);
+        else if (args.length == 4)
             PluginStarter.registerPlugin(OpenstackClient.class, args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]));
         else
             PluginStarter.registerPlugin(OpenstackClient.class, "openstack", "localhost", 5672, 10);
@@ -122,12 +121,6 @@ public class OpenstackClient extends VimDriver {
         overrides.setProperty(KeystoneProperties.CREDENTIAL_TYPE, CredentialTypes.PASSWORD_CREDENTIALS);
         overrides.setProperty(Constants.PROPERTY_RELAX_HOSTNAME, "true");
         overrides.setProperty(Constants.PROPERTY_TRUST_ALL_CERTS, "true");
-        //NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
-        //NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
-        //GlanceApi glanceApi = ContextBuilder.newBuilder("openstack-glance").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(GlanceApi.class);
-        //this.keystoneApi = ContextBuilder.newBuilder("openstack-keystone").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(KeystoneApi.class);
-        //this.tenantId = keystoneApi.getTenantApi().get().getByName(vimInstance.getTenant()).getId();
-        //String tenantId = getTenantId(vimInstance);
     }
 
     private String getZone(VimInstance vimInstance) {
@@ -768,11 +761,11 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public Network createNetwork(VimInstance vimInstance, Network network) throws VimDriverException {
-        Network createdNetwork = createNetwork(vimInstance, network.getName(), network.isExternal(), network.isShared());
+        Network createdNetwork = createNetwork(vimInstance, network.getName(), network.getExternal(), network.getShared());
         network.setName(createdNetwork.getName());
         network.setExtId(createdNetwork.getExtId());
-        network.setExternal(createdNetwork.isExternal());
-        network.setShared(createdNetwork.isShared());
+        network.setExternal(createdNetwork.getExternal());
+        network.setShared(createdNetwork.getShared());
         return network;
     }
 
@@ -805,11 +798,11 @@ public class OpenstackClient extends VimDriver {
 
     @Override
     public Network updateNetwork(VimInstance vimInstance, Network network) throws VimDriverException {
-        Network updatedNetwork = updateNetwork(vimInstance, network.getExtId(), network.getName(), network.isExternal(), network.isShared());
+        Network updatedNetwork = updateNetwork(vimInstance, network.getExtId(), network.getName(), network.getExternal(), network.getShared());
         network.setName(updatedNetwork.getName());
         network.setExtId(updatedNetwork.getExtId());
-        network.setExternal(updatedNetwork.isExternal());
-        network.setShared(updatedNetwork.isShared());
+        network.setExternal(updatedNetwork.getExternal());
+        network.setShared(updatedNetwork.getShared());
         return network;
     }
 
@@ -1014,9 +1007,6 @@ public class OpenstackClient extends VimDriver {
         try {
             NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
             SubnetApi subnetApi = neutronApi.getSubnetApi(getZone(vimInstance));
-            //Cannot update read-only attribute cidr
-            //Cannot update read-only attribute network_id
-            //Cannot update read-only attribute ip_version
             UpdateSubnet updateSubnet = UpdateSubnet.updateBuilder().name(name).build();
             org.jclouds.openstack.neutron.v2.domain.Subnet jcloudsSubnet = subnetApi.update(subnetExtId, updateSubnet);
             Subnet subnet = new Subnet();
@@ -1045,7 +1035,7 @@ public class OpenstackClient extends VimDriver {
                         ExternalGatewayInfo externalGatewayInfo = router.getExternalGatewayInfo();
                         if (externalGatewayInfo != null) {
                             String networkId = externalGatewayInfo.getNetworkId();
-                            if (getNetworkById(vimInstance, networkId).isExternal()) {
+                            if (getNetworkById(vimInstance, networkId).getExternal()) {
                                 log.info("Found a Router that is connected with external Network on VimInstance with name: " + vimInstance.getName());
                                 return router.getId();
                             }
@@ -1069,7 +1059,7 @@ public class OpenstackClient extends VimDriver {
             String externalNetId = null;
             log.debug("Finding an external Network where we can connect a new Router to on VimInstance with name: " + vimInstance.getName());
             for (Network network : listNetworks(vimInstance)) {
-                if (network.isExternal()) {
+                if (network.getExternal()) {
                     log.debug("Found an external Network where we can connect a new Router to on VimInstance with name: " + vimInstance.getName() + " -> Network: " + network);
                     externalNetId = network.getExtId();
                 }
@@ -1258,27 +1248,6 @@ public class OpenstackClient extends VimDriver {
     }
 
     /**
-     * DEBUG: keystoneclient.session REQ: curl -g -i -X GET http://192.168.41.45:5000/v2.0 -H "Accept: application/json" -H "User-Agent: python-keystoneclient"
-     * <p/>
-     * DEBUG: keystoneclient.session RESP: [200] content-length: 423 vary: X-Auth-Token keep-alive: timeout=5, max=100 server: Apache/2.4.7 (Ubuntu) connection: Keep-Alive date: Thu, 15 Oct 2015 16:02:51 GMT content-type: application/json
-     * <p/>
-     * RESP BODY: {"version": {"status": "stable", "updated": "2014-04-17T00:00:00Z", "media-types": [{"base": "application/json", "type": "application/vnd.openstack.identity-v2.0+json"}, {"base": "application/xml", "type": "application/vnd.openstack.identity-v2.0+xml"}], "id": "v2.0", "links": [{"href": "http://192.168.41.45:5000/v2.0/", "rel": "self"}, {"href": "http://docs.openstack.org/", "type": "text/html", "rel": "describedby"}]}}
-     * <p/>
-     * <p/>
-     * <p/>
-     * DEBUG: neutronclient.neutron.v2_0.floatingip.AssociateFloatingIP run(Namespace(fixed_ip_address=None, floatingip_id=u'863726a7-1cb2-4625-9a7a-89acfc5a4efb', port_id=u'eaa9b1a3-019a-4ad6-bf32-03d6d52dbf15', request_format='json'))
-     * <p/>
-     * DEBUG: keystoneclient.auth.identity.v2 Making authentication request to http://192.168.41.45:5000/v2.0/tokens
-     * <p/>
-     * DEBUG: keystoneclient.session REQ: curl -g -i -X PUT http://192.168.41.45:9696/v2.0/floatingips/863726a7-1cb2-4625-9a7a-89acfc5a4efb.json -H "User-Agent: python-neutronclient" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: {SHA1}8e68f14d5225cf075ab87965c6d0d65f45527994" -d '{"floatingip": {"port_id": "eaa9b1a3-019a-4ad6-bf32-03d6d52dbf15"}}'
-     * <p/>
-     * DEBUG: keystoneclient.session RESP: [200] date: Thu, 15 Oct 2015 16:02:51 GMT connection: keep-alive content-type: application/json; charset=UTF-8 content-length: 371 x-openstack-request-id: req-3706c1e2-af82-458a-a304-320c3d9c5306
-     * <p/>
-     * RESP BODY: {"floatingip": {"floating_network_id": "84581ab8-fd45-468e-8cc1-dd1f0a24b18f", "router_id": "46562b53-29e0-4708-b35b-1fd25f8edb03", "fixed_ip_address": "10.0.0.113", "floating_ip_address": "192.168.41.189", "tenant_id": "7941f2d9f2f24da4be590a3d0c6d55cb", "status": "DOWN", "port_id": "eaa9b1a3-019a-4ad6-bf32-03d6d52dbf15", "id": "863726a7-1cb2-4625-9a7a-89acfc5a4efb"}}
-     * <p/>
-     * <p/>
-     * <p/>
-     * Associated floating IP 863726a7-1cb2-4625-9a7a-89acfc5a4efb
      *
      * @param vimInstance
      * @param server

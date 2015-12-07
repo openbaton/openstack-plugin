@@ -70,12 +70,8 @@ repositories {
         url "http://get.openbaton.org:8081/nexus/content/groups/public"
     }
 }
-
 dependencies {
     compile 'org.openbaton:plugin-sdk:0.15-SNAPSHOT'
-//    compile project(':catalogue')
-//    compile project(':vim-drivers')
-//    compile project(':plugin-sdk')
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
 
@@ -92,13 +88,11 @@ dependencies {
 
 
     compile 'org.slf4j:slf4j-api:1.7.12'
+    compile 'org.slf4j:slf4j-simple:1.7.12'
 
     testCompile("org.mockito:mockito-all:1.10.19")
-
     testCompile("org.powermock:powermock-mockito-release-full:1.6.3")
 
-
     testCompile("junit:junit:4.12")
-
-    compile 'org.slf4j:slf4j-simple:1.7.12'
 }
+
