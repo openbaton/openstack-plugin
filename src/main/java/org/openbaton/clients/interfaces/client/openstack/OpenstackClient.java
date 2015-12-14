@@ -83,6 +83,8 @@ import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 
 import static org.jclouds.scriptbuilder.domain.Statements.exec;
@@ -96,6 +98,7 @@ public class OpenstackClient extends VimDriver {
     Iterable<Module> modules;
     Properties overrides;
     private Logger log = LoggerFactory.getLogger(this.getClass());
+    private static Lock lock;
 
     public OpenstackClient() throws RemoteException {
         super();
@@ -107,6 +110,7 @@ public class OpenstackClient extends VimDriver {
     }
 
     public static void main(String[] args) throws NoSuchMethodException, IOException, InstantiationException, TimeoutException, IllegalAccessException, InvocationTargetException {
+        OpenstackClient.lock = new ReentrantLock();
         if (args.length == 6)
             PluginStarter.registerPlugin(OpenstackClient.class, args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]), args[4],args[5]);
         else if (args.length == 4)
@@ -200,6 +204,7 @@ public class OpenstackClient extends VimDriver {
             }
         }
         if (floatingIp != null && floatingIp.size() > 0) {
+            lock.lock();
             log.debug("Assigning FloatingIPs to VM with hostname: " + name);
             log.debug("FloatingIPs are: " + floatingIp);
             if (listFreeFloatingIps(vimInstance).size() >= floatingIp.size()) {
@@ -210,6 +215,7 @@ public class OpenstackClient extends VimDriver {
             } else {
                 log.error("Cannot assign FloatingIPs to VM with hostname: " + name + ". No FloatingIPs left...");
             }
+            lock.unlock();
         }
         return server;
     }
