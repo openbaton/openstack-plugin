@@ -71,7 +71,7 @@ repositories {
     }
 }
 dependencies {
-    compile 'org.openbaton:plugin-sdk:0.15-SNAPSHOT'
+    compile 'org.openbaton:plugin-sdk:0.15'
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
 
