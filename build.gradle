@@ -30,8 +30,8 @@ apply plugin: 'idea'
 apply plugin: 'eclipse'
 apply plugin: 'jacoco'
 
-apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/nexus.upload.plugin.gradle'
-apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/command.line.helper.gradle'
+apply from: 'gradle/gradle/nexus.upload.plugin.gradle'
+apply from: 'gradle/gradle/command.line.helper.gradle'
 
 /**
  * Project settings
@@ -57,39 +57,42 @@ project.ext {
      * gradle Related Vars
      */
     //------------------------------------------------//
-    mainClass = 'org.openbaton.clients.interfaces.client.openstack.Starter'
+    mainClass = 'org.openbaton.clients.interfaces.client.openstack.OpenstackClient'
 }
 
-apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/application.java.gradle'
-apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/run.application.java.gradle'
-apply from: 'plugin-sdk/openbaton-libs/gradle/gradle/git.release.gradle'
+apply from: 'gradle/gradle/application.java.gradle'
+apply from: 'gradle/gradle/run.application.java.gradle'
+apply from: 'gradle/gradle/git.release.gradle'
 
 repositories {
     mavenCentral()
+    maven {
+        url "http://get.openbaton.org:8081/nexus/content/groups/public"
+    }
 }
-
 dependencies {
-    compile project(':catalogue')
-    compile project(':vim-drivers')
-    compile project(':plugin-sdk')
+    compile 'org.openbaton:plugin-sdk:0.15'
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
 
-    compile ('org.apache.jclouds.driver:jclouds-slf4j:1.9.0')
-    compile ('org.apache.jclouds.driver:jclouds-sshj:1.9.0')
-    compile ('org.apache.jclouds.api:openstack-keystone:1.9.0')
-    compile ('org.apache.jclouds.api:openstack-nova:1.9.0')
-    compile ('org.apache.jclouds.api:openstack-swift:1.9.0')
-    compile ('org.apache.jclouds.api:openstack-cinder:1.9.0')
-    compile ('org.apache.jclouds.api:openstack-trove:1.9.0')
-    compile ('org.apache.jclouds.labs:openstack-glance:1.9.0')
-    compile ('org.apache.jclouds.labs:openstack-neutron:1.9.0')
-    compile ('org.apache.jclouds.labs:openstack-marconi:1.9.0')
+    compile ('org.apache.jclouds.driver:jclouds-slf4j:1.9.1')
+    compile ('org.apache.jclouds.driver:jclouds-sshj:1.9.1')
+    compile ('org.apache.jclouds.api:openstack-keystone:1.9.1')
+    compile ('org.apache.jclouds.api:openstack-nova:1.9.1')
+    compile ('org.apache.jclouds.api:openstack-swift:1.9.1')
+    compile ('org.apache.jclouds.api:openstack-cinder:1.9.1')
+    compile ('org.apache.jclouds.api:openstack-trove:1.9.1')
+    compile ('org.apache.jclouds.labs:openstack-glance:1.9.1')
+    compile ('org.apache.jclouds.labs:openstack-neutron:1.9.1')
+    compile ('org.apache.jclouds.labs:openstack-marconi:1.9.1')
+
 
     compile 'org.slf4j:slf4j-api:1.7.12'
+    compile 'org.slf4j:slf4j-simple:1.7.12'
 
     testCompile("org.mockito:mockito-all:1.10.19")
-    testCompile("junit:junit:4.12")
+    testCompile("org.powermock:powermock-mockito-release-full:1.6.3")
 
-    compile 'org.slf4j:slf4j-simple:1.7.12'
+    testCompile("junit:junit:4.12")
 }
+
