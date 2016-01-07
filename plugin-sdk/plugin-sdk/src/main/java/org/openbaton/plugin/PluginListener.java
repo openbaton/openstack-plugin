@@ -83,7 +83,7 @@ public class PluginListener implements Runnable {
 
                 String message = new String(delivery.getBody());
 
-                log.debug("received: " + message);
+                log.debug("Received message");
 
                 PluginAnswer answer = new PluginAnswer();
 
@@ -96,7 +96,7 @@ public class PluginListener implements Runnable {
                 String response = gson.toJson(answer);
 
                 log.debug("Answer is: " + response);
-                log.debug("reply queue is: " + props.getReplyTo());
+                log.debug("Reply queue is: " + props.getReplyTo());
 
                 channel.basicPublish(exchange, props.getReplyTo(), replyProps, response.getBytes());
 
@@ -135,7 +135,7 @@ public class PluginListener implements Runnable {
 
         Class pluginClass = pluginInstance.getClass();
 
-        log.debug("Params are: " + params);
+        log.debug("There are " + params.size() + " parameters");
 
         for (Method m : pluginClass.getMethods()){
             log.debug("Method checking is: " + m.getName() + " with " + m.getParameterTypes().length + " parameters");

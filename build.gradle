@@ -71,7 +71,10 @@ repositories {
     }
 }
 dependencies {
-    compile 'org.openbaton:plugin-sdk:0.15'
+    compile 'org.openbaton:catalogue:0.15'
+    compile 'org.openbaton:monitoring:0.15'
+    compile 'org.openbaton:vim-drivers:0.15'
+    compile project(":plugin-sdk")
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
 
