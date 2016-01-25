@@ -122,6 +122,8 @@ public class OpenstackClient extends VimDriver {
         modules = ImmutableSet.<Module>of(new SLF4JLoggingModule());
         overrides = new Properties();
         overrides.setProperty(KeystoneProperties.CREDENTIAL_TYPE, CredentialTypes.PASSWORD_CREDENTIALS);
+        // TODO: add option to configuration file that would allow to enable/disable
+        // this behavior at startup time.
         overrides.setProperty(Constants.PROPERTY_RELAX_HOSTNAME, "true");
         overrides.setProperty(Constants.PROPERTY_TRUST_ALL_CERTS, "true");
     }
@@ -1174,7 +1176,11 @@ public class OpenstackClient extends VimDriver {
                  */
 
                 URI endpoint = null;
-                ContextBuilder contextBuilder = ContextBuilder.newBuilder("openstack-nova").credentials(vimInstance.getUsername(), vimInstance.getPassword()).endpoint(vimInstance.getAuthUrl());
+                ContextBuilder contextBuilder = ContextBuilder
+                    .newBuilder("openstack-nova")
+                    .credentials(vimInstance.getUsername(), vimInstance.getPassword())
+                    .overrides(overrides)
+                    .endpoint(vimInstance.getAuthUrl());
                 ComputeServiceContext context = contextBuilder.buildView(ComputeServiceContext.class);
                 Function<Credentials, Access> auth = context.utils().injector().getInstance(Key.get(new TypeLiteral<Function<Credentials, Access>>() {
                 }));
@@ -1262,7 +1268,11 @@ public class OpenstackClient extends VimDriver {
     public String getTenantId(VimInstance vimInstance) throws VimDriverException {
         log.debug("Finding TenantID for Tenant with name: " + vimInstance.getTenant() + " on VimInstance with name: " + vimInstance.getName());
         try {
-            ContextBuilder contextBuilder = ContextBuilder.newBuilder("openstack-nova").credentials(vimInstance.getUsername(), vimInstance.getPassword()).endpoint(vimInstance.getAuthUrl());
+            ContextBuilder contextBuilder = ContextBuilder
+                .newBuilder("openstack-nova")
+                .credentials(vimInstance.getUsername(), vimInstance.getPassword())
+                .overrides(overrides)
+                .endpoint(vimInstance.getAuthUrl());
             ComputeServiceContext context = contextBuilder.buildView(ComputeServiceContext.class);
             Function<Credentials, Access> auth = context.utils().injector().getInstance(Key.get(new TypeLiteral<Function<Credentials, Access>>() {
             }));
@@ -1284,7 +1294,11 @@ public class OpenstackClient extends VimDriver {
         HttpURLConnection connection = null;
         try {
             Quota quota = new Quota();
-            ContextBuilder contextBuilder = ContextBuilder.newBuilder("openstack-nova").credentials(vimInstance.getUsername(), vimInstance.getPassword()).endpoint(vimInstance.getAuthUrl());
+            ContextBuilder contextBuilder = ContextBuilder
+                .newBuilder("openstack-nova")
+                .credentials(vimInstance.getUsername(), vimInstance.getPassword())
+                .overrides(overrides)
+                .endpoint(vimInstance.getAuthUrl());
             ComputeServiceContext context = contextBuilder.buildView(ComputeServiceContext.class);
             Function<Credentials, Access> auth = context.utils().injector().getInstance(Key.get(new TypeLiteral<Function<Credentials, Access>>() {
             }));
@@ -1377,7 +1391,11 @@ public class OpenstackClient extends VimDriver {
                 log.error("Associating FloatingIP: Cannot assign FloatingIPs to server " + server.getId() + " . wrong floatingip: " + fip.getValue());
 
             log.debug("Associating " + floatingIp + " to server: " + server.getName());
-            ContextBuilder contextBuilder = ContextBuilder.newBuilder("openstack-nova").credentials(vimInstance.getUsername(), vimInstance.getPassword()).endpoint(vimInstance.getAuthUrl());
+            ContextBuilder contextBuilder = ContextBuilder
+                .newBuilder("openstack-nova")
+                .credentials(vimInstance.getUsername(), vimInstance.getPassword())
+                .overrides(overrides)
+                .endpoint(vimInstance.getAuthUrl());
             ComputeServiceContext context = contextBuilder.buildView(ComputeServiceContext.class);
             Function<Credentials, Access> auth = context.utils().injector().getInstance(Key.get(new TypeLiteral<Function<Credentials, Access>>() {
             }));
@@ -1520,7 +1538,11 @@ public class OpenstackClient extends VimDriver {
 
     private String findFloatingIpId(String floatingIp, VimInstance vimInstance) throws VimDriverException, IOException {
         URI endpoint = null;
-        ContextBuilder contextBuilder = ContextBuilder.newBuilder("openstack-nova").credentials(vimInstance.getUsername(), vimInstance.getPassword()).endpoint(vimInstance.getAuthUrl());
+        ContextBuilder contextBuilder = ContextBuilder
+            .newBuilder("openstack-nova")
+            .credentials(vimInstance.getUsername(), vimInstance.getPassword())
+            .overrides(overrides)
+            .endpoint(vimInstance.getAuthUrl());
         ComputeServiceContext context = contextBuilder.buildView(ComputeServiceContext.class);
         Function<Credentials, Access> auth = context.utils().injector().getInstance(Key.get(new TypeLiteral<Function<Credentials, Access>>() {
         }));
@@ -1582,7 +1604,11 @@ public class OpenstackClient extends VimDriver {
         HttpURLConnection connection = null;
         log.info("Began retrieving the name of the ip pool");
         try {
-            ContextBuilder contextBuilder = ContextBuilder.newBuilder("openstack-nova").credentials(vimInstance.getUsername(), vimInstance.getPassword()).endpoint(vimInstance.getAuthUrl());
+            ContextBuilder contextBuilder = ContextBuilder
+                .newBuilder("openstack-nova")
+                .credentials(vimInstance.getUsername(), vimInstance.getPassword())
+                .overrides(overrides)
+                .endpoint(vimInstance.getAuthUrl());
             ComputeServiceContext context = contextBuilder.buildView(ComputeServiceContext.class);
             Function<Credentials, Access> auth = context.utils().injector().getInstance(Key.get(new TypeLiteral<Function<Credentials, Access>>() {
             }));
