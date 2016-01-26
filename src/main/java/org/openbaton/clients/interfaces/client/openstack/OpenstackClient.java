@@ -19,6 +19,7 @@ package org.openbaton.clients.interfaces.client.openstack;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.inject.Key;
@@ -207,6 +208,14 @@ public class OpenstackClient extends VimDriver {
             lock.lock();
             log.debug("Assigning FloatingIPs to VM with hostname: " + name);
             log.debug("FloatingIPs are: " + floatingIp);
+            int freeIps = listFreeFloatingIps(vimInstance).size();
+            int ipsNeeded = floatingIp.size();
+            if (freeIps < ipsNeeded) {
+                log.info("Insufficient number of ips allocated to tenant, will try to allocate more ips from pool");
+                log.debug("Getting the pool name of a floating ip pool");
+                String pool_name = getIpPoolName(vimInstance);
+                get_allocated(vimInstance, pool_name, ipsNeeded - freeIps);
+            }
             if (listFreeFloatingIps(vimInstance).size() >= floatingIp.size()) {
                 for (Map.Entry<String, String> fip : floatingIp.entrySet()) {
                     associateFloatingIpToNetwork(vimInstance, server, fip);
@@ -1251,6 +1260,7 @@ public class OpenstackClient extends VimDriver {
                 connection.disconnect();
             }
         }
+
     }
 
     /**
@@ -1378,8 +1388,89 @@ public class OpenstackClient extends VimDriver {
             }
         }
     }
+    //retrieves the ip pool name from openstack via http request
+    public String getIpPoolName(VimInstance vimInstance) throws VimDriverException{
+        HttpURLConnection connection = null;
+        log.info("Began retrieveing the name of the ip pool");
+        try {
+            ContextBuilder contextBuilder = ContextBuilder.newBuilder("openstack-nova").credentials(vimInstance.getUsername(), vimInstance.getPassword()).endpoint(vimInstance.getAuthUrl());
+            ComputeServiceContext context = contextBuilder.buildView(ComputeServiceContext.class);
+            Function<Credentials, Access> auth = context.utils().injector().getInstance(Key.get(new TypeLiteral<Function<Credentials, Access>>() {
+            }));
+            //Get Access and all information
+            Access access = auth.apply(new Credentials.Builder<Credentials>().identity(vimInstance.getTenant() + ":" + vimInstance.getUsername()).credential(vimInstance.getPassword()).build());
+            //Get Tenant ID of user
+            String tenant_id = access.getToken().getTenant().get().getId();
+            //Get nova endpoint
+            URI endpoint = null;
+            for (org.jclouds.openstack.keystone.v2_0.domain.Service service : access) {
+                if (service.getName().equals("nova")) {
+                    for (Endpoint end : service) {
+                        endpoint = end.getPublicURL();
+                        break;
+                    }
+                    break;
+                }
+            }
+            URL url = null;
+            url = new URL(endpoint + "/os-floating-ip-pools");
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("X-Auth-Token", access.getToken().getId());
+            InputStream is = null;
+            is = connection.getInputStream();
 
-    @Override
+            BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+            StringBuilder response = new StringBuilder(); // or StringBuffer if not Java 5+
+            String line;
+            while ((line = rd.readLine()) != null) {
+                response.append(line);
+                response.append('\r');
+            }
+            rd.close();
+
+            JsonParser parser = new JsonParser();
+            JsonObject json = (JsonObject) parser.parse(response.toString());
+
+            JsonArray ip_pools = json.get("floating_ip_pools").getAsJsonArray();
+            String ip_pool_name = ip_pools.get(0).getAsJsonObject().get("name").getAsString();
+            log.info("Retrieved the name of ip pool: " + ip_pool_name);
+            if (connection != null) {
+                connection.disconnect();
+            }
+            return ip_pool_name;
+
+
+        } catch (Exception e) {
+            throw new VimDriverException(e.getMessage());
+        }
+
+
+
+    }
+    //allocated a number of ips from the pool
+    public void get_allocated (VimInstance vimInstance, String pool_name, int ipsNeeded) throws VimDriverException {
+        try {
+            NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+            org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(getZone(vimInstance)).get();
+            while (ipsNeeded > 0) {
+                log.debug("Allocating ip from pool: " + pool_name);
+                org.jclouds.openstack.nova.v2_0.domain.FloatingIP ip = floatingIPApi.allocateFromPool(pool_name);
+                if (ip == null) {
+                    log.warn("There are not enough ips in the pool for instantiation");
+                }
+                log.info("Allocated new ip from pool " + pool_name + "Data about ip: " + ip.toString());
+                ipsNeeded--;
+            }
+        }catch (Exception e) {
+            throw new VimDriverException(e.getMessage());
+        }
+        return;
+
+    }
+
+        @Override
     public String getType(VimInstance vimInstance) {
         return "openstack";
     }
