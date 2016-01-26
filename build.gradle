@@ -74,6 +74,8 @@ dependencies {
     compile 'org.openbaton:catalogue:0.16-SNAPSHOT'
     compile 'org.openbaton:monitoring:0.16-SNAPSHOT'
     compile 'org.openbaton:vim-drivers:0.16-SNAPSHOT'
+    compile 'org.openbaton:exception:0.16-SNAPSHOT'
+
     compile project(":plugin-sdk")
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
