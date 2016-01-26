@@ -201,7 +201,9 @@ public class OpenstackClient extends VimDriver {
             }
             if (server.getStatus().equals("ERROR")) {
                 log.error("Failed to launch VM with hostname: " + name + " -> Went into ERROR");
-                throw new VimDriverException(server.getExtendedStatus());
+                VimDriverException vimDriverException = new VimDriverException(server.getExtendedStatus());
+                vimDriverException.setServer(server);
+                throw vimDriverException;
             }
         }
         if (floatingIp != null && floatingIp.size() > 0) {

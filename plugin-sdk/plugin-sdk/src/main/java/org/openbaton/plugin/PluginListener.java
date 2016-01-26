@@ -6,6 +6,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.QueueingConsumer;
+import org.apache.commons.codec.binary.Base64;
 import org.openbaton.catalogue.nfvo.PluginAnswer;
 import org.openbaton.exceptions.NotFoundException;
 import org.slf4j.Logger;
@@ -15,10 +16,12 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+
 
 /**
  * Created by lto on 25/11/15.
@@ -31,7 +34,7 @@ public class PluginListener implements Runnable {
     private Logger log;
     private QueueingConsumer consumer;
     private Channel channel;
-    private Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayToBase64TypeAdapter()).setPrettyPrinting().create();
     private boolean exit = false;
     private String brokerIp;
     private int brokerPort;
@@ -62,6 +65,16 @@ public class PluginListener implements Runnable {
 
     public void setExit(boolean exit) {
         this.exit = exit;
+    }
+
+    private static class ByteArrayToBase64TypeAdapter implements JsonSerializer<byte[]>, JsonDeserializer<byte[]> {
+        public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return Base64.decodeBase64(json.getAsString());
+        }
+
+        public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(Base64.encodeBase64String(src));
+        }
     }
 
     @Override
