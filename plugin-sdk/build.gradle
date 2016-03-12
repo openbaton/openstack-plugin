@@ -8,7 +8,7 @@ repositories {
 
 
 dependencies {
-    compile 'org.openbaton:vim-drivers:1.0.1'
+    compile 'org.openbaton:vim-drivers:1.0.2-SNAPSHOT'
     compile 'org.openbaton:monitoring:1.0.1'
     compile 'org.openbaton:exception:1.0.1'
 
