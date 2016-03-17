@@ -19,6 +19,7 @@ package org.openbaton.clients.interfaces.client.openstack;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.inject.Key;
@@ -69,8 +70,8 @@ import org.openbaton.catalogue.mano.common.DeploymentFlavour;
 import org.openbaton.catalogue.nfvo.*;
 import org.openbaton.catalogue.nfvo.Network;
 import org.openbaton.catalogue.nfvo.Subnet;
+import org.openbaton.exceptions.VimDriverException;
 import org.openbaton.plugin.PluginStarter;
-import org.openbaton.vim.drivers.exceptions.VimDriverException;
 import org.openbaton.vim.drivers.interfaces.VimDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -200,13 +201,23 @@ public class OpenstackClient extends VimDriver {
             }
             if (server.getStatus().equals("ERROR")) {
                 log.error("Failed to launch VM with hostname: " + name + " -> Went into ERROR");
-                throw new VimDriverException(server.getExtendedStatus());
+                VimDriverException vimDriverException = new VimDriverException(server.getExtendedStatus());
+                vimDriverException.setServer(server);
+                throw vimDriverException;
             }
         }
         if (floatingIp != null && floatingIp.size() > 0) {
             lock.lock();
             log.debug("Assigning FloatingIPs to VM with hostname: " + name);
             log.debug("FloatingIPs are: " + floatingIp);
+            int freeIps = listFreeFloatingIps(vimInstance).size();
+            int ipsNeeded = floatingIp.size();
+            if (freeIps < ipsNeeded) {
+                log.info("Insufficient number of ips allocated to tenant, will try to allocate more ips from pool");
+                log.debug("Getting the pool name of a floating ip pool");
+                String pool_name = getIpPoolName(vimInstance);
+                get_allocated(vimInstance, pool_name, ipsNeeded - freeIps);
+            }
             if (listFreeFloatingIps(vimInstance).size() >= floatingIp.size()) {
                 for (Map.Entry<String, String> fip : floatingIp.entrySet()) {
                     associateFloatingIpToNetwork(vimInstance, server, fip);
@@ -775,15 +786,22 @@ public class OpenstackClient extends VimDriver {
         return network;
     }
 
-    private Network createNetwork(VimInstance vimInstance, String name, boolean external, boolean shared) throws VimDriverException {
+    private Network createNetwork(VimInstance vimInstance, String name, boolean external, boolean shared) throws VimDriverException  {
         log.debug("Creating Network with name: " + name + " on VimInstance with name: " + vimInstance.getName());
+        org.jclouds.openstack.neutron.v2.domain.Network jcloudsNetwork;
         try {
             NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
             NetworkApi networkApi = neutronApi.getNetworkApi(getZone(vimInstance));
             //CreateNetwork createNetwork = CreateNetwork.createBuilder(name).networkType(NetworkType.fromValue(networkType)).external(external).shared(shared).segmentationId(segmentationId).physicalNetworkName(physicalNetworkName).build();
             CreateNetwork createNetwork = CreateNetwork.createBuilder(name).external(external).shared(shared).build();
             log.debug("Initialized jclouds Network: " + createNetwork);
-            org.jclouds.openstack.neutron.v2.domain.Network jcloudsNetwork = networkApi.create(createNetwork);
+
+            jcloudsNetwork = networkApi.create(createNetwork);
+        } catch (Exception e) {
+            log.warn("Could not create a network");
+            log.error(e.getMessage(), e);
+            throw new VimDriverException(e.getMessage());
+        }
             log.debug("Created jclouds Network: " + jcloudsNetwork);
             Network network = new Network();
             network.setName(jcloudsNetwork.getName());
@@ -792,15 +810,18 @@ public class OpenstackClient extends VimDriver {
             network.setShared(jcloudsNetwork.getShared());
             network.setSubnets(new HashSet<Subnet>());
             for (String subnetId : jcloudsNetwork.getSubnets()) {
-                network.getSubnets().add(getSubnetById(vimInstance, subnetId));
-            }
+                try {
+                    network.getSubnets().add(getSubnetById(vimInstance, subnetId));
+                }
+                catch (Exception e) {
+                        log.warn("Not able to find subnets. Not able to find subnet with id" + subnetId);
+                    }
+                }
             log.info("Created Network with name: " + name + " on VimInstance with name: " + vimInstance.getName() + " -> Network: " + network);
             return network;
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage());
+
+            //return null;
         }
-    }
 
     @Override
     public Network updateNetwork(VimInstance vimInstance, Network network) throws VimDriverException {
@@ -1251,6 +1272,7 @@ public class OpenstackClient extends VimDriver {
                 connection.disconnect();
             }
         }
+
     }
 
     /**
@@ -1260,7 +1282,7 @@ public class OpenstackClient extends VimDriver {
      * @param fip
      * @return
      */
-    public synchronized void associateFloatingIpToNetwork(VimInstance vimInstance, Server server, Map.Entry<String, String> fip) throws VimDriverException {
+    public synchronized void associateFloatingIpToNetwork(VimInstance vimInstance, Server server, Map.Entry<String, String> fip)  {
         log.debug("Associating FloatingIP to VM with hostname: " + server.getName() + " on VimInstance with name: " + vimInstance.getName());
         HttpURLConnection connection = null;
         try {
@@ -1318,45 +1340,106 @@ public class OpenstackClient extends VimDriver {
             String floatingIpId = null;
             String port_id = null;
             NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+            if (novaApi.getFloatingIPApi(getZone(vimInstance)).isPresent()) {
             org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(getZone(vimInstance)).get();
-            Iterator<FloatingIP> floatingIpIterator = floatingIPApi.list().iterator();
-            log.debug("Associating FloatingIP: finding ID of FloatingIP: " + floatingIp);
-            while (floatingIpIterator.hasNext()) {
-                FloatingIP floatingIP = floatingIpIterator.next();
-                log.debug("Associating FloatingIP: check -> " + floatingIP.toString());
-                if (floatingIP.getIp().equals(floatingIp)) {
-                    floatingIpId = floatingIP.getId();
+
+                Iterator<FloatingIP> floatingIpIterator = floatingIPApi.list().iterator();
+                log.debug("Associating FloatingIP: finding ID of FloatingIP: " + floatingIp);
+                while (floatingIpIterator.hasNext()) {
+                    FloatingIP floatingIP = floatingIpIterator.next();
+                    log.debug("Associating FloatingIP: check -> " + floatingIP.toString());
+                    if (floatingIP.getIp().equals(floatingIp)) {
+                        floatingIpId = floatingIP.getId();
+                        break;
+                    }
+                }
+                log.debug("Associating FloatingIP: looking for Port where the private IP is connected to");
+                NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
+                for (Port port : neutronApi.getPortApi(getZone(vimInstance)).list().concat()) {
+                    log.debug("Associating FloatingIP: Port: " + port.toString());
+
+                    if (port.getFixedIps().iterator().hasNext()) {
+                        String ipAddress = port.getFixedIps().iterator().next().getIpAddress();
+                        log.debug("IP PORT: " + ipAddress + " === " + privateIp);
+                        if (ipAddress.equals(privateIp)) {
+                            port_id = port.getId();
+                        }
+                    } else {
+                        log.warn("Associating FloatingIP: Not found any IP assgined to this Port");
+                    }
+                }
+
+                URL url = new URL(endpoint + "/v2.0/floatingips/" + floatingIpId + ".json");
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("PUT");
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Accept", "application/json");
+                connection.setRequestProperty("User-Agent", "python-neutronclient");
+                connection.setRequestProperty("X-Auth-Token", access.getToken().getId());
+                OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
+                out.write("{\"floatingip\": {\"port_id\": \"" + port_id + "\"}}");
+                out.close();
+                //Get Response
+                InputStream is = connection.getInputStream();
+                BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+                StringBuilder response = new StringBuilder(); // or StringBuffer if not Java 5+
+                String line;
+                while ((line = rd.readLine()) != null) {
+                    response.append(line);
+                    response.append('\r');
+                }
+                rd.close();
+                //Parse json to object
+                log.debug("Associating FloatingIP: Response of final request is: " + response.toString());
+                server.getFloatingIps().put(fip.getKey(), floatingIp);
+                log.info("Associated FloatingIP to VM with hostname: " + server.getName() + " on VimInstance with name: " + vimInstance.getName() + " -> FloatingIP: " + floatingIp);
+            }
+            else {
+                log.warn("Could not access floating ip APIs");
+            }
+            } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            //throw new VimDriverException(e.getMessage());
+            log.warn("It seems that floatingApi is not present or there are not enough available floating ips, this means that we will not be able to assign them");
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+    //retrieves the ip pool name from openstack via http request
+    public String getIpPoolName(VimInstance vimInstance) {
+        HttpURLConnection connection = null;
+        log.info("Began retrieving the name of the ip pool");
+        try {
+            ContextBuilder contextBuilder = ContextBuilder.newBuilder("openstack-nova").credentials(vimInstance.getUsername(), vimInstance.getPassword()).endpoint(vimInstance.getAuthUrl());
+            ComputeServiceContext context = contextBuilder.buildView(ComputeServiceContext.class);
+            Function<Credentials, Access> auth = context.utils().injector().getInstance(Key.get(new TypeLiteral<Function<Credentials, Access>>() {
+            }));
+            //Get Access and all information
+            Access access = auth.apply(new Credentials.Builder<Credentials>().identity(vimInstance.getTenant() + ":" + vimInstance.getUsername()).credential(vimInstance.getPassword()).build());
+            //Get Tenant ID of user
+            String tenant_id = access.getToken().getTenant().get().getId();
+            //Get nova endpoint
+            URI endpoint = null;
+            for (org.jclouds.openstack.keystone.v2_0.domain.Service service : access) {
+                if (service.getName().equals("nova")) {
+                    for (Endpoint end : service) {
+                        endpoint = end.getPublicURL();
+                        break;
+                    }
                     break;
                 }
             }
-            log.debug("Associating FloatingIP: looking for Port where the private IP is connected to");
-            NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
-            for (Port port : neutronApi.getPortApi(getZone(vimInstance)).list().concat()) {
-                log.debug("Associating FloatingIP: Port: " + port.toString());
-
-                if (port.getFixedIps().iterator().hasNext()) {
-                    String ipAddress = port.getFixedIps().iterator().next().getIpAddress();
-                    log.debug("IP PORT: " + ipAddress + " === " + privateIp);
-                    if (ipAddress.equals(privateIp)) {
-                        port_id = port.getId();
-                    }
-                } else {
-                    log.warn("Associating FloatingIP: Not found any IP assgined to this Port");
-                }
-            }
-
-            URL url = new URL(endpoint + "/v2.0/floatingips/" + floatingIpId + ".json");
+            URL url = null;
+            url = new URL(endpoint + "/os-floating-ip-pools");
             connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("PUT");
-            connection.setDoOutput(true);
+            connection.setRequestMethod("GET");
             connection.setRequestProperty("Accept", "application/json");
-            connection.setRequestProperty("User-Agent", "python-neutronclient");
             connection.setRequestProperty("X-Auth-Token", access.getToken().getId());
-            OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
-            out.write("{\"floatingip\": {\"port_id\": \"" + port_id + "\"}}");
-            out.close();
-            //Get Response
-            InputStream is = connection.getInputStream();
+            InputStream is = null;
+            is = connection.getInputStream();
+
             BufferedReader rd = new BufferedReader(new InputStreamReader(is));
             StringBuilder response = new StringBuilder(); // or StringBuffer if not Java 5+
             String line;
@@ -1365,21 +1448,58 @@ public class OpenstackClient extends VimDriver {
                 response.append('\r');
             }
             rd.close();
-            //Parse json to object
-            log.debug("Associating FloatingIP: Response of final request is: " + response.toString());
-            server.getFloatingIps().put(fip.getKey(), floatingIp);
-            log.info("Associated FloatingIP to VM with hostname: " + server.getName() + " on VimInstance with name: " + vimInstance.getName() + " -> FloatingIP: " + floatingIp);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            throw new VimDriverException(e.getMessage());
-        } finally {
+
+            JsonParser parser = new JsonParser();
+            JsonObject json = (JsonObject) parser.parse(response.toString());
+
+            JsonArray ip_pools = json.get("floating_ip_pools").getAsJsonArray();
+            String ip_pool_name = ip_pools.get(0).getAsJsonObject().get("name").getAsString();
+            log.info("Retrieved the name of ip pool: " + ip_pool_name);
             if (connection != null) {
                 connection.disconnect();
             }
-        }
-    }
+            return ip_pool_name;
 
-    @Override
+
+        } catch (Exception e) {
+            log.warn("An error during trying to find the name of the pool");
+            return null;
+        }
+
+
+
+    }
+    //allocated a number of ips from the pool
+    public void get_allocated (VimInstance vimInstance, String pool_name, int ipsNeeded) {
+        if (pool_name == null) {
+            return;
+        }
+
+            try {
+                NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
+                if (novaApi.getFloatingIPApi(getZone(vimInstance)).isPresent()) {
+                    org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(getZone(vimInstance)).get();
+                    while (ipsNeeded > 0) {
+                        log.debug("Allocating ip from pool: " + pool_name);
+                        org.jclouds.openstack.nova.v2_0.domain.FloatingIP ip = floatingIPApi.allocateFromPool(pool_name);
+                        if (ip == null) {
+                            log.warn("There are not enough ips in the pool for instantiation");
+                        }
+                        log.info("Allocated new ip from pool " + pool_name + "Data about ip: " + ip.toString());
+                        ipsNeeded--;
+                    }
+                } else {
+                    log.warn("Could not access floating ip API");
+                }
+            } catch (Exception e) {
+                log.warn("It was impossible to allocate more floating ips because the quota is riched or floatingapis are not available");
+                //throw new VimDriverException(e.getMessage());
+            }
+            return;
+
+        }
+
+        @Override
     public String getType(VimInstance vimInstance) {
         return "openstack";
     }

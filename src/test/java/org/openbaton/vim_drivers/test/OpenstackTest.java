@@ -71,7 +71,7 @@ import org.openbaton.catalogue.nfvo.Quota;
 import org.openbaton.catalogue.nfvo.Server;
 import org.openbaton.catalogue.nfvo.Subnet;
 import org.openbaton.clients.interfaces.client.openstack.OpenstackClient;
-import org.openbaton.vim.drivers.exceptions.VimDriverException;
+import org.openbaton.exceptions.VimDriverException;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -793,7 +793,7 @@ public class OpenstackTest {
         assertEqualsNetworks(definedNetwork, network);
 
         when(org.jclouds.openstack.neutron.v2.domain.Network.CreateNetwork.class).thenThrow(new AuthorizationException());
-        exception.expect(VimDriverException.class);
+        //exception.expect(VimDriverException.class);
         openstackClient.createNetwork(vimInstance, definedNetwork);
     }
 
