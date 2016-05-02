@@ -5,7 +5,8 @@ OpenBaton is an open source project providing a reference implementation of the 
 
 ##### Installation
 
-If you are using source code (git) to install openbaton, it is recommended that you go to [get.openbaton.org][get-openbaton-org] and download the stable version of the plugin from there. After this you will need to put the jar in the folder that is specified in file /etc/openbaton/openbaton.properties via the property plugin-installation-dir. You can specify where the log of the plugin will be with this parameter nfvo.plugin.log.path. 
+If you are using source code (git) to install openbaton, it is recommended that you go to [get.openbaton.org][get-openbaton-org] and download the stable version of the plugin from there. After this you will need to put the jar in the folder that is specified in file /etc/openbaton/openbaton.properties via the property plugin-installation-dir. You can specify where the log of the plugin will be with this parameter nfvo.plugin.log.path.
+If you are using debian package then you will be presented with a choice of downloading plugins during the installation process.
 
 
 You can also clone this project and build it with gradle yourself. After that the placement of the built jar file is the same as for jar that would have been downloaded from the repository.
