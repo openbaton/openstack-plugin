@@ -24,7 +24,7 @@ number-of-consumers specifies the number of actors that will accept the requests
 ### Development
 
 Want to contribute? Great! Get in contact with us. You can find us on twitter @[openbaton]
-You can look at [Plugin SDK][plugin-sdk-link] to see how the SDK is implented or you can use it to implement your own plugin!
+You can look at [Plugin SDK][plugin-sdk-link] to see how the SDK is implemented or you can use it to implement your own plugin!
 
 ### News and Website
 Information about OpenBaton can be found on our website. Follow us on Twitter @[openbaton].
