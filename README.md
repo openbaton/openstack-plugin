@@ -1,7 +1,7 @@
 OpenBaton Openstack Plugin
 ----------------
 
-OpenBaton is an open source project providing a reference implementation of the NFVO and VNFM based on the [ETSI][NFV MANO] specification, is implemented in java using the [spring.io] framework. It consists of two main components: a NFVO and a generic VNFM. This project **openstack-plugin** contains an implementation of a plugin for OpenBaton system. This plugin is implemented with the help of plugin-sdk developed for the NFVO which allow NFVO to send requests to the plugin via AMQP server and allocate resources on Openstack. The default way of communication between the plugin and openstack is rabbitmq server. The plugin uses Apache Jclouds API and REST to communicate with Openstack. It most widely used and tested with the Openstack-Kilo version to date. This is recommended and default Openstack distribution. However, if you want to use it with Openstack-Liberty, you can find the Liberty version of the plugin at[get.openbaton.org][get-openbaton-org] or in a specific branch of this project. Be aware, however, that liberty version uses the snapshot(not yet released) version of the jclouds API. 
+OpenBaton is an open source project providing a reference implementation of the NFVO and VNFM based on the [ETSI][NFV MANO] specification, is implemented in java using the [spring.io] framework. It consists of two main components: a NFVO and a generic VNFM. This project **openstack-plugin** contains an implementation of a plugin for OpenBaton system. This plugin is implemented with the help of plugin-sdk developed for the NFVO which allows NFVO to send requests to the plugin via AMQP server and allocate resources on Openstack. The default way of communication between the plugin and openstack is rabbitmq server. The plugin uses Apache Jclouds API and REST to communicate with Openstack. It is most widely used and tested with the Openstack-Kilo version to date. This is recommended and default Openstack distribution. However, if you want to use it with Openstack-Liberty, you can find the Liberty version of the plugin at[get.openbaton.org][get-openbaton-org-liberty] or in a specific branch of this project. Be aware, however, that liberty version uses the snapshot(not yet released) version of the jclouds API. 
 
 ##### Installation
 
@@ -27,7 +27,7 @@ Want to contribute? Great! Get in contact with us. You can find us on twitter @[
 You can look at [Plugin SDK][plugin-sdk-link] to see how the SDK is implemented or you can use it to implement your own plugin!
 
 ### News and Website
-Information about OpenBaton can be found on our website. Follow us on Twitter @[openbaton].
+Information about OpenBaton can be found on our [website][website]. Follow us on Twitter @[openbaton].
 
 ### License
 
@@ -53,3 +53,5 @@ limitations under the License.
 [spring.io]:https://spring.io/
 [NFV MANO]:http://docbox.etsi.org/ISG/NFV/Open/Published/gs_NFV-MAN001v010101p%20-%20Management%20and%20Orchestration.pdf
 [openbaton]:http://twitter.com/openbaton
+[website]:http://openbaton.github.io/
+[get-openbaton-org-liberty]:http://get.openbaton.org/plugins/1.0.2-liberty-nighly/
