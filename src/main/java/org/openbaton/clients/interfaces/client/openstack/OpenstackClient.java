@@ -714,7 +714,10 @@ public class OpenstackClient extends VimDriver {
             flavorApi.delete(extId);
             boolean isDeleted;
             try {
-                getFlavorById(vimInstance, extId);
+                DeploymentFlavour flavour = getFlavorById(vimInstance, extId);
+                if (flavour.getFlavour_key() == null) {
+                    throw new NullPointerException();
+                }
                 isDeleted = false;
                 log.warn("Not deleted Flavor with ExtId: " + extId + " from VimInstance with name: " + vimInstance.getName());
             } catch (NullPointerException e) {
@@ -743,7 +746,10 @@ public class OpenstackClient extends VimDriver {
             log.info("Found Flavor with ExtId: " + extId + " on VimInstance with name: " + vimInstance.getName());
             return flavor;
         } catch (NullPointerException e) {
-            throw new NullPointerException("Flavor with extId: " + extId + " not found on VimInstance with name: " + vimInstance.getName());
+            log.warn(e.getMessage(), new NullPointerException("Flavor with extId: " + extId + " not found on VimInstance with name: " + vimInstance.getName()));
+            DeploymentFlavour flavor = new DeploymentFlavour();
+            flavor.setExtId(extId);
+            return flavor;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new VimDriverException(e.getMessage());
