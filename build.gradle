@@ -72,8 +72,11 @@ repositories {
 }
 dependencies {
 
-
-    compile project(":plugin-sdk")
+    compile 'org.openbaton:catalogue:2.0.1'
+    compile 'org.openbaton:monitoring:2.0.1'
+    compile 'org.openbaton:vim-drivers:2.0.1'
+    compile 'org.openbaton:exception:2.0.1'
+    compile 'org.openbaton:plugin-sdk:2.0.1'
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
 
@@ -87,7 +90,6 @@ dependencies {
     compile ('org.apache.jclouds.labs:openstack-glance:1.9.2')
     compile ('org.apache.jclouds.labs:openstack-neutron:1.9.2')
     compile ('org.apache.jclouds.labs:openstack-marconi:1.9.2')
-
 
     compile 'org.slf4j:slf4j-api:1.7.12'
     compile 'org.slf4j:slf4j-simple:1.7.12'
