@@ -1,3 +1,0 @@
-rootProject.name = 'plugins-sdk'
-
-include ':plugin-sdk'
