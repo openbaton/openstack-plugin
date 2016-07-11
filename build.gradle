@@ -23,6 +23,7 @@ buildscript {
 }
 plugins {
     id 'net.researchgate.release' version '2.1.2'
+    id "com.github.sherter.google-java-format" version "0.3.2"
 }
 
 apply plugin: 'java'
@@ -103,3 +104,4 @@ dependencies {
     testCompile("junit:junit:4.12")
 }
 
+build.dependsOn verifyGoogleJavaFormat
