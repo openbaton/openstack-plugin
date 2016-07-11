@@ -70,6 +70,7 @@ import org.openbaton.catalogue.mano.common.DeploymentFlavour;
 import org.openbaton.catalogue.nfvo.*;
 import org.openbaton.catalogue.nfvo.Network;
 import org.openbaton.catalogue.nfvo.Subnet;
+import org.openbaton.clients.interfaces.client.openstack.DisableSSLValidation;
 import org.openbaton.exceptions.VimDriverException;
 import org.openbaton.plugin.PluginStarter;
 import org.openbaton.vim.drivers.interfaces.VimDriver;
@@ -124,8 +125,11 @@ public class OpenstackClient extends VimDriver {
         modules = ImmutableSet.<Module>of(new SLF4JLoggingModule());
         overrides = new Properties();
         overrides.setProperty(KeystoneProperties.CREDENTIAL_TYPE, CredentialTypes.PASSWORD_CREDENTIALS);
-        overrides.setProperty(Constants.PROPERTY_RELAX_HOSTNAME, "true");
-        overrides.setProperty(Constants.PROPERTY_TRUST_ALL_CERTS, "true");
+        String sslChecksDisabled = properties.getProperty("disable-ssl-certificate-checks", "false");
+        log.debug("Disable SSL certificate checks: {}", sslChecksDisabled);
+        if (sslChecksDisabled.trim().equals("true")) {
+            DisableSSLValidation.disableChecks();
+        }
     }
 
     private String getZone(VimInstance vimInstance) {
