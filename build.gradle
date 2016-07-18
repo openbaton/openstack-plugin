@@ -77,10 +77,10 @@ repositories {
 
 dependencies {
     compile 'org.openbaton:catalogue:2.1.1-SNAPSHOT'
-    compile 'org.openbaton:monitoring:2.0.1'
-    compile 'org.openbaton:vim-drivers:2.0.1'
-    compile 'org.openbaton:exception:2.0.1'
-    compile 'org.openbaton:plugin-sdk:2.0.1'
+    compile 'org.openbaton:monitoring:2.1.1-SNAPSHOT'
+    compile 'org.openbaton:vim-drivers:2.1.1-SNAPSHOT'
+    compile 'org.openbaton:exception:2.1.1-SNAPSHOT'
+    compile 'org.openbaton:plugin-sdk:2.1.1-SNAPSHOT'
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
 
