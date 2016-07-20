@@ -23,7 +23,6 @@ buildscript {
 }
 plugins {
     id 'net.researchgate.release' version '2.1.2'
-    id "com.github.sherter.google-java-format" version "0.3.2"
 }
 
 apply plugin: 'java'
@@ -76,11 +75,11 @@ repositories {
 }
 
 dependencies {
-    compile 'org.openbaton:catalogue:2.1.1-SNAPSHOT'
-    compile 'org.openbaton:monitoring:2.1.1-SNAPSHOT'
-    compile 'org.openbaton:vim-drivers:2.1.1-SNAPSHOT'
-    compile 'org.openbaton:exception:2.1.1-SNAPSHOT'
-    compile 'org.openbaton:plugin-sdk:2.1.1-SNAPSHOT'
+    compile 'org.openbaton:catalogue:2.0.1'
+    compile 'org.openbaton:monitoring:2.0.1'
+    compile 'org.openbaton:vim-drivers:2.0.1'
+    compile 'org.openbaton:exception:2.0.1'
+    compile 'org.openbaton:plugin-sdk:2.0.1'
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
 
@@ -95,6 +94,7 @@ dependencies {
     compile ('org.apache.jclouds.labs:openstack-neutron:2.0.0-SNAPSHOT')
     compile ('org.apache.jclouds.labs:openstack-marconi:2.0.0-SNAPSHOT')
 
+
     compile 'org.slf4j:slf4j-api:1.7.12'
     compile 'org.slf4j:slf4j-simple:1.7.12'
 
@@ -104,4 +104,3 @@ dependencies {
     testCompile("junit:junit:4.12")
 }
 
-build.dependsOn verifyGoogleJavaFormat
