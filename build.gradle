@@ -69,11 +69,7 @@ repositories {
     maven {
         url "http://get.openbaton.org:8081/nexus/content/groups/public"
     }
-    maven {
-        url "https://repository.apache.org/content/repositories/snapshots"
-    }
 }
-
 dependencies {
     compile 'org.openbaton:catalogue:2.0.1'
     compile 'org.openbaton:monitoring:2.0.1'
@@ -81,18 +77,21 @@ dependencies {
     compile 'org.openbaton:exception:2.0.1'
     compile 'org.openbaton:plugin-sdk:2.0.1'
 
+
+    //compile project(":plugin-sdk")
+
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
 
-    compile ('org.apache.jclouds.driver:jclouds-slf4j:2.0.0-SNAPSHOT')
-    compile ('org.apache.jclouds.driver:jclouds-sshj:2.0.0-SNAPSHOT')
-    compile ('org.apache.jclouds.api:openstack-keystone:2.0.0-SNAPSHOT')
-    compile ('org.apache.jclouds.api:openstack-nova:2.0.0-SNAPSHOT')
-    compile ('org.apache.jclouds.api:openstack-swift:2.0.0-SNAPSHOT')
-    compile ('org.apache.jclouds.api:openstack-cinder:2.0.0-SNAPSHOT')
-    compile ('org.apache.jclouds.api:openstack-trove:2.0.0-SNAPSHOT')
-    compile ('org.apache.jclouds.labs:openstack-glance:2.0.0-SNAPSHOT')
-    compile ('org.apache.jclouds.labs:openstack-neutron:2.0.0-SNAPSHOT')
-    compile ('org.apache.jclouds.labs:openstack-marconi:2.0.0-SNAPSHOT')
+    compile ('org.apache.jclouds.driver:jclouds-slf4j:1.9.2')
+    compile ('org.apache.jclouds.driver:jclouds-sshj:1.9.2')
+    compile ('org.apache.jclouds.api:openstack-keystone:1.9.2')
+    compile ('org.apache.jclouds.api:openstack-nova:1.9.2')
+    compile ('org.apache.jclouds.api:openstack-swift:1.9.2')
+    compile ('org.apache.jclouds.api:openstack-cinder:1.9.2')
+    compile ('org.apache.jclouds.api:openstack-trove:1.9.2')
+    compile ('org.apache.jclouds.labs:openstack-glance:1.9.2')
+    compile ('org.apache.jclouds.labs:openstack-neutron:1.9.2')
+    compile ('org.apache.jclouds.labs:openstack-marconi:1.9.2')
 
 
     compile 'org.slf4j:slf4j-api:1.7.12'
