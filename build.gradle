@@ -93,6 +93,9 @@ dependencies {
     compile ('org.apache.jclouds.labs:openstack-neutron:1.9.2')
     compile ('org.apache.jclouds.labs:openstack-marconi:1.9.2')
 
+    // https://mvnrepository.com/artifact/commons-net/commons-net
+    compile group: 'commons-net', name: 'commons-net', version: '3.5'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.4'
 
     compile 'org.slf4j:slf4j-api:1.7.12'
     compile 'org.slf4j:slf4j-simple:1.7.12'

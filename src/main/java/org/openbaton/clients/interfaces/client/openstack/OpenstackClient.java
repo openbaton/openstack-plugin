@@ -28,6 +28,8 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.net.util.SubnetUtils;
 import org.jclouds.ContextBuilder;
 import org.jclouds.collect.PagedIterable;
 import org.jclouds.compute.ComputeServiceContext;
@@ -88,14 +90,18 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -124,7 +130,7 @@ public class OpenstackClient extends VimDriver {
       Pattern.compile("^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
   Iterable<Module> modules;
   Properties overrides;
-  private Logger log = LoggerFactory.getLogger(this.getClass());
+  private static Logger log = LoggerFactory.getLogger(OpenstackClient.class);
   private static Lock lock;
 
   public OpenstackClient() throws RemoteException {
@@ -159,7 +165,7 @@ public class OpenstackClient extends VimDriver {
                                    Integer.parseInt(args[2]),
                                    Integer.parseInt(args[3]));
     } else {
-      PluginStarter.registerPlugin(OpenstackClient.class, "openstack", "172.20.30.13", 5672, 10);
+      PluginStarter.registerPlugin(OpenstackClient.class, "openstack", "localhost", 5672, 10);
     }
   }
 
@@ -210,6 +216,11 @@ public class OpenstackClient extends VimDriver {
       log.debug("Location of openstack environment is not defined. Selecting a random one...");
     }
     if (zone == null) {
+      for (String zn : zones){
+        if (zn.contains("nova")){
+          return zn;
+        }
+      }
       log.debug("Selecting a random Location of openstack environment from: " + zones);
       zone = zones.iterator().next();
       log.debug("Selected Location of openstack environment: '" + zone + "'");
@@ -525,14 +536,16 @@ public class OpenstackClient extends VimDriver {
       server.setName(jcloudsServer.getName());
       server.setStatus(jcloudsServer.getStatus().value());
       server.setExtendedStatus(jcloudsServer.getExtendedStatus().toString());
-      HashMap<String, List<String>> ipMap = new HashMap<String, List<String>>();
+      HashMap<String, List<String>> ipMap = new HashMap<>();
+
       for (String key : jcloudsServer.getAddresses().keys()) {
-        List<String> ips = new ArrayList<String>();
+        List<String> ips = new ArrayList<>();
         for (Address address : jcloudsServer.getAddresses().get(key)) {
           ips.add(address.getAddr());
         }
         ipMap.put(key, ips);
       }
+
       server.setIps(ipMap);
       server.setFloatingIps(new HashMap<String, String>());
       server.setCreated(jcloudsServer.getCreated());
@@ -2195,6 +2208,10 @@ public class OpenstackClient extends VimDriver {
               rd.close();
               //Parse json to object
               log.debug("Associating FloatingIP: Response of final request is: " + response.toString());
+
+              log.debug("Translating ip...");
+              floatingIp = translateToNAT(floatingIp);
+
               server.getFloatingIps().put(fip.getKey(), floatingIp);
               log.info("Associated FloatingIP to VM with hostname: " +
                        server.getName() +
@@ -2214,6 +2231,64 @@ public class OpenstackClient extends VimDriver {
     }
   }
 
+  private static String translateToNAT(String floatingIp) throws UnknownHostException {
+
+    Properties natRules = new Properties();
+    try {
+      File file = new File("/etc/openbaton/plugin/openstack/nat-translation-rules.properties");
+      if (file.exists()){
+        natRules.load(new FileInputStream(file));
+      }
+      else {
+        natRules.load(OpenstackClient.class.getResourceAsStream("/nat-translation-rules.properties"));
+      }
+    } catch (IOException e) {
+      log.warn("no translation rules!");
+      return floatingIp;
+    }
+
+    for (Map.Entry<Object, Object> entry : natRules.entrySet() ){
+      String fromCidr = (String) entry.getKey();
+      String toCidr = (String) entry.getValue();
+      log.debug("cidr is: " + fromCidr);
+      SubnetUtils utilsFrom = new SubnetUtils(fromCidr);
+      SubnetUtils utilsTo = new SubnetUtils(toCidr);
+
+      SubnetUtils.SubnetInfo subnetInfoFrom = utilsFrom.getInfo();
+      SubnetUtils.SubnetInfo subnetInfoTo = utilsTo.getInfo();
+      InetAddress floatingIpNetAddr = InetAddress.getByName(floatingIp);
+      if (subnetInfoFrom.isInRange(floatingIp)){//translation!
+
+        log.debug("From networkMask " + subnetInfoFrom.getNetmask());
+        log.debug("To networkMask " + subnetInfoTo.getNetmask());
+        if (!subnetInfoFrom.getNetmask().equals(subnetInfoTo.getNetmask())) {
+          log.error("Not translation possible, netmasks are different");
+          return floatingIp;
+        }
+        byte[] host = new byte[4];
+        for (int i = 0 ; i < floatingIpNetAddr.getAddress().length ; i++) {
+          byte
+              value =
+              (byte) (floatingIpNetAddr.getAddress()[i] | InetAddress.getByName(subnetInfoFrom.getNetmask()).getAddress()[i]);
+          if (value == -1){
+            host[i] = 0;
+          }else host[i] = value;
+        }
+
+        byte[] netaddress = InetAddress.getByName(subnetInfoTo.getNetworkAddress()).getAddress();
+        String[] result = new String[4];
+        for (int i = 0 ; i<netaddress.length ; i++) {
+          int intValue = new Byte((byte) (netaddress[i] | Byte.valueOf(host[i]))).intValue();
+          if (intValue < 0)
+            intValue = intValue & 0xFF;
+          result[i] = String.valueOf(intValue);
+        }
+
+        return StringUtils.join(result,".");
+      }
+    }
+    return floatingIp;
+  }
 
   //retrieves the ip pool name from openstack via http request
   public String getIpPoolName(VimInstance vimInstance) {
