@@ -58,6 +58,7 @@ project.ext {
      */
     //------------------------------------------------//
     mainClass = 'org.openbaton.clients.interfaces.client.openstack.OpenstackClient'
+    openbatonVersion = "2.1.2-SNAPSHOT"
 }
 
 apply from: 'gradle/gradle/application.java.gradle'
@@ -71,14 +72,12 @@ repositories {
     }
 }
 dependencies {
-    compile 'org.openbaton:catalogue:2.0.1'
-    compile 'org.openbaton:monitoring:2.0.1'
-    compile 'org.openbaton:vim-drivers:2.0.1'
-    compile 'org.openbaton:exception:2.0.1'
-    compile 'org.openbaton:plugin-sdk:2.0.1'
+    compile 'org.openbaton:catalogue:' + openbatonVersion
+    compile 'org.openbaton:monitoring:' + openbatonVersion
+    compile 'org.openbaton:vim-drivers:' + openbatonVersion
+    compile 'org.openbaton:exception:' + openbatonVersion
+    compile 'org.openbaton:plugin-sdk:' + openbatonVersion
 
-
-    //compile project(":plugin-sdk")
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
 

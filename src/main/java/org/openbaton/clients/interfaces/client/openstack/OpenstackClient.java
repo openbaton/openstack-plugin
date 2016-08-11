@@ -19,11 +19,13 @@ package org.openbaton.clients.interfaces.client.openstack;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
@@ -132,6 +134,7 @@ public class OpenstackClient extends VimDriver {
   Properties overrides;
   private static Logger log = LoggerFactory.getLogger(OpenstackClient.class);
   private static Lock lock;
+  private Gson gson = new GsonBuilder().create();
 
   public OpenstackClient() throws RemoteException {
     super();
@@ -275,7 +278,7 @@ public class OpenstackClient extends VimDriver {
                                       Set<String> network,
                                       Set<String> secGroup,
                                       String userData) throws VimDriverException {
-    return launchInstanceAndWait(vimInstance, name, imageId, flavorId, keypair, network, secGroup, userData, null);
+    return launchInstanceAndWait(vimInstance, name, imageId, flavorId, keypair, network, secGroup, userData, null, null);
   }
 
   @Override
@@ -287,12 +290,13 @@ public class OpenstackClient extends VimDriver {
                                       Set<String> network,
                                       Set<String> secGroup,
                                       String userData,
-                                      Map<String, String> floatingIp) throws VimDriverException {
+                                      Map<String, String> floatingIp,
+                                      Set<org.openbaton.catalogue.security.Key> keys) throws VimDriverException {
     boolean bootCompleted = false;
+    if (keys != null || !keys.isEmpty())
+      userData = addKeysToUserData(userData,keys);
     log.info("Deploying VM on VimInstance: " + vimInstance.getName());
-    if (vimInstance.getName().endsWith("er")) {
-      log.debug("yea");
-    }
+    log.debug("UserData is:\n " + userData + " \n");
     Server server = launchInstance(vimInstance, name, imageId, flavorId, keypair, network, secGroup, userData);
     log.info("Deployed VM ( " +
              server.getName() +
@@ -342,6 +346,22 @@ public class OpenstackClient extends VimDriver {
       lock.unlock();
     }
     return server;
+  }
+
+  private String addKeysToUserData(String userData, Set<org.openbaton.catalogue.security.Key> keys) {
+      log.debug("Going to add all keys: " + keys.size());
+      userData += "\n";
+      userData += "for x in `find /home/ -name authorized_keys`; do\n";
+    String oldKeys = gson.toJson(keys);
+
+    Set<org.openbaton.catalogue.security.Key> keysSet = new Gson().fromJson(oldKeys, new TypeToken<Set<org.openbaton.catalogue.security.Key>>() {}.getType());
+
+    for (org.openbaton.catalogue.security.Key key : keysSet){
+        log.debug("Adding key: " + key.getName());
+        userData += "\techo \"" + key.getPublicKey() + "\" >> $x\n";
+      }
+      userData += "done\n";
+    return userData;
   }
 
   private String getNetworkIdByName(VimInstance vimInstance, String key) throws VimDriverException {
