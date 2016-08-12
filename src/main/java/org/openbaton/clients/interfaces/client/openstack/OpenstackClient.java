@@ -293,7 +293,7 @@ public class OpenstackClient extends VimDriver {
                                       Map<String, String> floatingIp,
                                       Set<org.openbaton.catalogue.security.Key> keys) throws VimDriverException {
     boolean bootCompleted = false;
-    if (keys != null || !keys.isEmpty())
+    if (keys != null && !keys.isEmpty())
       userData = addKeysToUserData(userData,keys);
     log.info("Deploying VM on VimInstance: " + vimInstance.getName());
     log.debug("UserData is:\n " + userData + " \n");
