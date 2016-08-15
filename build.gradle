@@ -58,6 +58,7 @@ project.ext {
      */
     //------------------------------------------------//
     mainClass = 'org.openbaton.clients.interfaces.client.openstack.OpenstackClient'
+    openbatonVersion = "2.1.2-SNAPSHOT"
 }
 
 apply from: 'gradle/gradle/application.java.gradle'
@@ -71,12 +72,12 @@ repositories {
     }
 }
 dependencies {
+    compile 'org.openbaton:catalogue:' + openbatonVersion
+    compile 'org.openbaton:monitoring:' + openbatonVersion
+    compile 'org.openbaton:vim-drivers:' + openbatonVersion
+    compile 'org.openbaton:exception:' + openbatonVersion
+    compile 'org.openbaton:plugin-sdk:' + openbatonVersion
 
-    compile 'org.openbaton:catalogue:2.0.1'
-    compile 'org.openbaton:monitoring:2.0.1'
-    compile 'org.openbaton:vim-drivers:2.0.1'
-    compile 'org.openbaton:exception:2.0.1'
-    compile 'org.openbaton:plugin-sdk:2.0.1'
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
 
@@ -90,6 +91,10 @@ dependencies {
     compile ('org.apache.jclouds.labs:openstack-glance:1.9.2')
     compile ('org.apache.jclouds.labs:openstack-neutron:1.9.2')
     compile ('org.apache.jclouds.labs:openstack-marconi:1.9.2')
+
+    // https://mvnrepository.com/artifact/commons-net/commons-net
+    compile group: 'commons-net', name: 'commons-net', version: '3.5'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.4'
 
     compile 'org.slf4j:slf4j-api:1.7.12'
     compile 'org.slf4j:slf4j-simple:1.7.12'
