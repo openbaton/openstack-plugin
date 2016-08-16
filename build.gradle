@@ -23,6 +23,7 @@ buildscript {
 }
 plugins {
     id 'net.researchgate.release' version '2.1.2'
+    id "nebula.os-package" version "2.2.6"
 }
 
 apply plugin: 'java'
@@ -32,6 +33,7 @@ apply plugin: 'jacoco'
 
 apply from: 'gradle/gradle/nexus.upload.plugin.gradle'
 apply from: 'gradle/gradle/command.line.helper.gradle'
+apply from: 'gradle/gradle/git.helpers.gradle'
 
 /**
  * Project settings
@@ -43,22 +45,28 @@ project.ext {
      */
     springVersion = '4.2.0.RELEASE'
     springBootVersion = '1.2.5.RELEASE'
-    //------------------------------------------------//
+    //------------------------------------------------//    
     //------------------------------------------------//
     /**
      * Application Related Version
      */
     applicationVersion = version
-    applicationVersionDebian = "1";
 
+    applicationRelease = isApplicationRelease()
+        applicationVersionDebian = "1";
+    applicationDate = new Date()
+    applicationRevision = getRevision()
+
+    applicationVersionSnapshot = (!applicationRelease) ? ".${asUTC(applicationDate, 'yyyyMMdd')}.git${applicationRevision}" : ""
+    applicationVersionFull = "${applicationVersion}${applicationVersionSnapshot}"
     //------------------------------------------------//
     //------------------------------------------------//
     /**
      * gradle Related Vars
      */
-    //------------------------------------------------//
     mainClass = 'org.openbaton.clients.interfaces.client.openstack.OpenstackClient'
     openbatonVersion = "2.1.2-SNAPSHOT"
+    //------------------------------------------------//
 }
 
 apply from: 'gradle/gradle/application.java.gradle'
@@ -104,4 +112,8 @@ dependencies {
 
     testCompile("junit:junit:4.12")
 }
+
+
+apply from: 'gradle/gradle/packaging.vimplugin.debian.gradle'
+
 
