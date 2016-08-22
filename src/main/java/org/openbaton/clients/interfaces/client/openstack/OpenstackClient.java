@@ -2168,33 +2168,16 @@ public class OpenstackClient extends VimDriver {
       String port_id = null;
       NovaApi novaApi = ContextBuilder.newBuilder("openstack-nova").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NovaApi.class);
             if (novaApi.getFloatingIPApi(getZone(vimInstance)).isPresent()) {
-                org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(getZone(vimInstance)).get();
-                Iterator<FloatingIP> floatingIpIterator = floatingIPApi.list().iterator();
-                log.debug("Associating FloatingIP: finding ID of FloatingIP: " + floatingIp);
-                while (floatingIpIterator.hasNext()) {
-                    FloatingIP floatingIP = floatingIpIterator.next();
-                    log.debug("Associating FloatingIP: check -> " + floatingIP.toString());
-                    if (floatingIP.getIp().equals(floatingIp)) {
-                        floatingIpId = floatingIP.getId();
-                        break;
-                    }
-                }
-                log.debug("Associating FloatingIP: looking for Port where the private IP is connected to");
-                NeutronApi neutronApi = ContextBuilder.newBuilder("openstack-neutron").endpoint(vimInstance.getAuthUrl()).credentials(vimInstance.getTenant() + ":" + vimInstance.getUsername(), vimInstance.getPassword()).modules(modules).overrides(overrides).buildApi(NeutronApi.class);
-                for (Port port : neutronApi.getPortApi(getZone(vimInstance)).list().concat()) {
-                    log.debug("Associating FloatingIP: Port: " + port.toString());
-                    if (port.getFixedIps().iterator().hasNext()) {
-                        String ipAddress = port.getFixedIps().iterator().next().getIpAddress();
-                        log.debug("IP PORT: " + ipAddress + " === " + privateIp);
-                        if (ipAddress.equals(privateIp)) {
-                            port_id = port.getId();
-                        }
-                    } else {
-                        log.warn("Associating FloatingIP: Not found any IP assgined to this Port");
-                    }
-                }
+              org.jclouds.openstack.nova.v2_0.extensions.FloatingIPApi floatingIPApi = novaApi.getFloatingIPApi(getZone(vimInstance)).get();
 
               floatingIPApi.addToServer(floatingIp, server.getExtId());
+              server.getFloatingIps().put(fip.getKey(), floatingIp);
+              log.info("Associated FloatingIP to VM with hostname: " +
+                      server.getName() +
+                      " on VimInstance with name: " +
+                      vimInstance.getName() +
+                      " -> FloatingIP: " +
+                      floatingIp);
             } else {
               log.warn("Could not access floating ip using the jclouds APIs, trying with restAPI");
 
