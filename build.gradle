@@ -53,7 +53,6 @@ project.ext {
     applicationVersion = version
 
     applicationRelease = isApplicationRelease()
-        applicationVersionDebian = "1";
     applicationDate = new Date()
     applicationRevision = getRevision()
 
