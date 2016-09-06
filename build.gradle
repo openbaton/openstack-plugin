@@ -64,7 +64,7 @@ project.ext {
      * gradle Related Vars
      */
     mainClass = 'org.openbaton.clients.interfaces.client.openstack.OpenstackClient'
-    openbatonVersion = "2.1.2-SNAPSHOT"
+    openbatonVersion = "2.1.3"
     //------------------------------------------------//
 }
 
