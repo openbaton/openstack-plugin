@@ -64,7 +64,6 @@ project.ext {
      * gradle Related Vars
      */
     mainClass = 'org.openbaton.clients.interfaces.client.openstack.OpenstackClient'
-    openbatonVersion = "2.1.2-SNAPSHOT"
     //------------------------------------------------//
 }
 
@@ -75,15 +74,16 @@ apply from: 'gradle/gradle/git.release.gradle'
 repositories {
     mavenCentral()
     maven {
-        url "http://get.openbaton.org:8081/nexus/content/groups/public"
+        //url "http://get.openbaton.org:8081/nexus/content/groups/public"
+        url "https://oss.sonatype.org/content/repositories/snapshots/"
     }
 }
 dependencies {
-    compile 'org.openbaton:catalogue:' + openbatonVersion
-    compile 'org.openbaton:monitoring:' + openbatonVersion
-    compile 'org.openbaton:vim-drivers:' + openbatonVersion
-    compile 'org.openbaton:exception:' + openbatonVersion
-    compile 'org.openbaton:plugin-sdk:' + openbatonVersion
+    compile 'org.openbaton:catalogue:2.1.4-SNAPSHOT'
+    compile 'org.openbaton:monitoring:2.1.4-SNAPSHOT'
+    compile 'org.openbaton:vim-drivers:2.1.4-SNAPSHOT'
+    compile 'org.openbaton:exception:2.1.4-SNAPSHOT'
+    compile 'org.openbaton:plugin-sdk:2.1.4-SNAPSHOT'
 
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
