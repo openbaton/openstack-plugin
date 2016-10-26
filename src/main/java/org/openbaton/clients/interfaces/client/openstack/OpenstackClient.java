@@ -274,11 +274,21 @@ public class OpenstackClient extends VimDriver {
               .buildApi(NovaApi.class);
       ServerApi serverApi = novaApi.getServerApi(getZone(vimInstance));
       String script = new ScriptBuilder().addStatement(exec(userData)).render(OsFamily.UNIX);
-      CreateServerOptions options =
-          CreateServerOptions.Builder.keyPairName(keypair)
-              .networks(network)
-              .securityGroupNames(secGroup)
-              .userData(script.getBytes());
+      CreateServerOptions options;
+      if (keypair.equals("")) {
+        options =
+            CreateServerOptions.Builder.networks(network)
+                .securityGroupNames(secGroup)
+                .userData(script.getBytes());
+
+      } else {
+
+        options =
+            CreateServerOptions.Builder.keyPairName(keypair)
+                .networks(network)
+                .securityGroupNames(secGroup)
+                .userData(script.getBytes());
+      }
 
       log.debug(
           "Keypair: "
