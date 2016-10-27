@@ -27,7 +27,7 @@ $ java -jar path-to-plugin.jar openstack [rabbitmq-ip] [rabbitmq-port] [n-of-con
 * **rabbitmq-ip** is the ip of the host where the rabbitmq server is installed and running
 * **rabbitmq-port** is the port on which the rabbitmq accepts the messages(it is usually 5672 by default) 
 * **number-of-consumers** specifies the number of actors that will accept the requests
-```
+
 
 # What is Open Baton?
 
