@@ -70,7 +70,7 @@ project.ext {
      */
     mainClass = 'org.openbaton.clients.interfaces.client.openstack.OpenstackClient'
     //------------------------------------------------//
-    openbatonVersion = '3.0.0-RC1'
+    openbatonVersion = '3.0.0'
 }
 
 apply from: 'gradle/gradle/application.java.gradle'
@@ -80,8 +80,8 @@ apply from: 'gradle/gradle/git.release.gradle'
 repositories {
     mavenCentral()
     maven {
-        //url "http://get.openbaton.org:8081/nexus/content/groups/public"
         url "https://oss.sonatype.org/content/repositories/snapshots/"
+	url "https://oss.sonatype.org/content/repositories/releases/"
     }
 }
 dependencies {
