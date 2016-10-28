@@ -561,9 +561,11 @@ public class OpenstackClient extends VimDriver {
           server.setName(jcloudsServer.getName());
           server.setStatus(jcloudsServer.getStatus().value());
           server.setExtendedStatus(jcloudsServer.getExtendedStatus().toString());
-          server.setHostName(jcloudsServer.getExtendedAttributes().get().getHostName());
-          server.setHypervisorHostName(
-              jcloudsServer.getExtendedAttributes().get().getHypervisorHostName());
+          if (jcloudsServer.getExtendedAttributes().isPresent()) {
+            server.setHostName(jcloudsServer.getExtendedAttributes().get().getHostName());
+            server.setHypervisorHostName(
+                jcloudsServer.getExtendedAttributes().get().getHypervisorHostName());
+          }
           HashMap<String, List<String>> ipMap = new HashMap<String, List<String>>();
           for (String key : jcloudsServer.getAddresses().keys()) {
             List<String> ips = new ArrayList<String>();
