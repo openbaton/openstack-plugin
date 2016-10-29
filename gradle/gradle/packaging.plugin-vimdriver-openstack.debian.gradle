@@ -20,11 +20,17 @@
 
 ext {
     debianApplicationVersionFull = "${applicationVersionFull}".replaceAll("-", ".")
-    openbatonInstallDir = "/opt/openbaton"
+
+    baseName = 'openbaton'
+    componentName = "plugin-vimdriver-openstack"
+    jarSubpathName = "plugins"
+    fullName = "${baseName}-${componentName}"
+    propertiesDir = '/etc/openbaton'
+    baseBinaryDir = '/usr/lib/openbaton'
 }
 
 task makedeb(type: Deb, dependsOn: [jar, build]) { 
-    packageName = (applicationRelease) ? "openbaton-openstack-vimplugin" : "openbaton-openstack-vimplugin-nightly"
+    packageName = (applicationRelease) ? "${fullName}" : "${fullName}-nightly"
     version = debianApplicationVersionFull
     //release = 1 
     priority = 'optional'
@@ -36,7 +42,13 @@ task makedeb(type: Deb, dependsOn: [jar, build]) {
     summary = 'OpenStack Virtualized Infrastructure Manager (VIM) Driver Plugin for the Open Baton Project'
     packageDescription = 'The OpenStack VIM Driver Plugin is a component of the Open Baton projetc, which is an ETSI compliant implementation of a NFV Management and Orchestration (MANO). It allows, using the Open Baton system, to deploy services on an OpenStack-based Network Function Virtualization Infrastructure (NFVI) instance'
 
+    preInstall file('gradle/gradle/scripts/debian/preinst')
 
     // Copy files from "from path" to "into path"
-    from(jar.outputs.files) 				                        { into '/usr/lib/openbaton/plugins' }      // jar file
+    from(jar.outputs.files) {                                                                                                   // jar file
+        //into '/usr/lib/openbaton/plugins'
+        into "${baseBinaryDir}/${jarSubpathName}"
+        rename("(.*)","${fullName}-${version}.jar")
+    }
+
 }

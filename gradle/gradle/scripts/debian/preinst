@@ -1,0 +1,56 @@
+#!/bin/sh
+
+# Copyright (c) 2015-2016 Fraunhofer FOKUS
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+##########################
+#### General Settings ####
+##########################
+
+set -e
+set -u
+#set -x # only for DEBUG
+
+# Make available the functions defined in /lib/lsb/init-functions
+. /lib/lsb/init-functions
+
+
+##########################
+#### Global Variables ####
+##########################
+
+OPENBATON_BASE_DIR=/usr
+INSTALL_DIR=${OPENBATON_BASE_DIR}/lib/openbaton
+
+OPENBATON_COMPONENT_NAME_FANCY="OpenStack VIM Driver Plugin"
+OPENBATON_COMPONENT_NAME=plugin-vimdriver-openstack
+OPENBATON_COMPONENT_RELATIVE_SUBPATH=plugins
+
+OPENBATON_COMPONENT_JAR_FILE_NAME=openbaton-${OPENBATON_COMPONENT_NAME}
+OPENBATON_COMPONENT_JAR_INSTALL_DIR=/usr/lib/openbaton/${OPENBATON_COMPONENT_RELATIVE_SUBPATH}
+
+
+####################
+#### Open Baton ####
+####################
+
+remove_existing_old_version_installed () {
+    if [ -d ${OPENBATON_COMPONENT_JAR_INSTALL_DIR} ]; then
+        openbaton_component_jar_file_name_versioned=$(ls -ct ${OPENBATON_COMPONENT_JAR_INSTALL_DIR} | grep "${OPENBATON_COMPONENT_JAR_FILE_NAME}" | grep "jar" | head -n 1)
+        if [ "${openbaton_component_jar_file_name_versioned}" != "" ]; then
+            rm ${OPENBATON_COMPONENT_JAR_INSTALL_DIR}/${openbaton_component_jar_file_name_versioned}
+            log_success_msg "Removing old Open Baton ${OPENBATON_COMPONENT_NAME_FANCY} .."
+        fi
+    fi
+}

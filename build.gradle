@@ -120,6 +120,6 @@ dependencies {
 }
 
 
-apply from: 'gradle/gradle/packaging.vimplugin.debian.gradle'
+apply from: 'gradle/gradle/packaging.plugin-vimdriver-openstack.debian.gradle'
 
 build.dependsOn verifyGoogleJavaFormat
