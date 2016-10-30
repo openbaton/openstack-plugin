@@ -23,10 +23,10 @@ ext {
 
     baseName = 'openbaton'
     componentName = "plugin-vimdriver-openstack"
-    jarSubpathName = "plugins"
     fullName = "${baseName}-${componentName}"
     propertiesDir = '/etc/openbaton'
     baseBinaryDir = '/usr/lib/openbaton'
+    jarSubpathName = "plugins".replaceAll("-", "/")
 }
 
 task makedeb(type: Deb, dependsOn: [jar, build]) { 
@@ -46,9 +46,7 @@ task makedeb(type: Deb, dependsOn: [jar, build]) {
 
     // Copy files from "from path" to "into path"
     from(jar.outputs.files) {                                                                                                   // jar file
-        //into '/usr/lib/openbaton/plugins'
         into "${baseBinaryDir}/${jarSubpathName}"
         rename("(.*)","${fullName}-${version}.jar")
     }
-
 }
