@@ -95,16 +95,16 @@ dependencies {
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
 
-    compile ('org.apache.jclouds.driver:jclouds-slf4j:1.9.2')
-    compile ('org.apache.jclouds.driver:jclouds-sshj:1.9.2')
-    compile ('org.apache.jclouds.api:openstack-keystone:1.9.2')
-    compile ('org.apache.jclouds.api:openstack-nova:1.9.2')
-    compile ('org.apache.jclouds.api:openstack-swift:1.9.2')
-    compile ('org.apache.jclouds.api:openstack-cinder:1.9.2')
-    compile ('org.apache.jclouds.api:openstack-trove:1.9.2')
-    compile ('org.apache.jclouds.labs:openstack-glance:1.9.2')
-    compile ('org.apache.jclouds.labs:openstack-neutron:1.9.2')
-    compile ('org.apache.jclouds.labs:openstack-marconi:1.9.2')
+    compile ('org.apache.jclouds.driver:jclouds-slf4j:2.0.0')
+    compile ('org.apache.jclouds.driver:jclouds-sshj:2.0.0')
+    compile ('org.apache.jclouds.api:openstack-keystone:2.0.0')
+    compile ('org.apache.jclouds.api:openstack-nova:2.0.0')
+    compile ('org.apache.jclouds.api:openstack-swift:2.0.0')
+    compile ('org.apache.jclouds.api:openstack-cinder:2.0.0')
+    compile ('org.apache.jclouds.api:openstack-trove:2.0.0')
+    compile ('org.apache.jclouds.labs:openstack-glance:2.0.0')
+    compile ('org.apache.jclouds.labs:openstack-neutron:2.0.0')
+    compile ('org.apache.jclouds.labs:openstack-marconi:2.0.0')
 
     // https://mvnrepository.com/artifact/commons-net/commons-net
     compile group: 'commons-net', name: 'commons-net', version: '3.5'
