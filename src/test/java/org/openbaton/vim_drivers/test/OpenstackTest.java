@@ -35,6 +35,7 @@ import org.jclouds.compute.ComputeServiceContext;
 import org.jclouds.compute.Utils;
 import org.jclouds.domain.Credentials;
 import org.jclouds.io.Payload;
+import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.openstack.glance.v1_0.GlanceApi;
 import org.jclouds.openstack.glance.v1_0.domain.ContainerFormat;
 import org.jclouds.openstack.glance.v1_0.domain.DiskFormat;
@@ -331,8 +332,8 @@ public class OpenstackTest {
   }
 
   private class MyAddress extends Address {
-    protected MyAddress(String addr, int version) {
-      super(addr, version);
+    protected MyAddress(String addr, int version, @Nullable String macAddr, @Nullable String type) {
+      super(addr, version, macAddr, type);
     }
   }
 
@@ -545,7 +546,7 @@ public class OpenstackTest {
     ServerExtendedStatus extStatus = new MyExtendedStatus("mocked_id", "mocked_name", 0);
     Map<String, Collection<Address>> addressMap = new HashMap<String, Collection<Address>>();
     Collection<Address> addresses = new HashSet<Address>();
-    addresses.add(new MyAddress("0.0.0.0", 4));
+    addresses.add(new MyAddress("0.0.0.0", 4, null, null));
     addressMap.put("mocked_private_network_name", addresses);
     Multimap<String, Address> multimap = ArrayListMultimap.create();
     for (String key : addressMap.keySet()) {
