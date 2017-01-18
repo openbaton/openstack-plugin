@@ -1721,7 +1721,13 @@ public class OpenstackClient extends VimDriver {
         subnet.setCidr(jcloudsSubnet.getCidr());
         subnet.setGatewayIp(jcloudsSubnet.getGatewayIp());
         subnet.setNetworkId(jcloudsSubnet.getNetworkId());
-        log.info("Found Subnet with extId: " + extId + " on VimInstance with name: " + vimInstance.getName() + " -> Subnet: " + subnet);
+        log.info(
+            "Found Subnet with extId: "
+                + extId
+                + " on VimInstance with name: "
+                + vimInstance.getName()
+                + " -> Subnet: "
+                + subnet);
         return subnet;
       } else {
         log.warn("Not found subnet with id " + extId);
