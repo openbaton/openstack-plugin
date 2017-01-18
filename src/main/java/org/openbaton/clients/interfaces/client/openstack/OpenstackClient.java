@@ -1427,7 +1427,8 @@ public class OpenstackClient extends VimDriver {
     network.setSubnets(new HashSet<Subnet>());
     for (String subnetId : jcloudsNetwork.getSubnets()) {
       try {
-        network.getSubnets().add(getSubnetById(vimInstance, subnetId));
+        Subnet subnet = getSubnetById(vimInstance, subnetId);
+        if (subnet != null) network.getSubnets().add(subnet);
       } catch (Exception e) {
         log.warn("Not able to find subnets. Not able to find subnet with id" + subnetId);
       }
@@ -1490,7 +1491,8 @@ public class OpenstackClient extends VimDriver {
       network.setShared(jcloudsNetwork.getShared());
       network.setSubnets(new HashSet<Subnet>());
       for (String subnetId : jcloudsNetwork.getSubnets()) {
-        network.getSubnets().add(getSubnetById(vimInstance, subnetId));
+        Subnet subnet = getSubnetById(vimInstance, subnetId);
+        if (subnet != null) network.getSubnets().add(subnet);
       }
       log.debug(
           "Updated Network with name: "
@@ -1571,7 +1573,8 @@ public class OpenstackClient extends VimDriver {
       network.setShared(jcloudsNetwork.getShared());
       network.setSubnets(new HashSet<Subnet>());
       for (String subnetId : jcloudsNetwork.getSubnets()) {
-        network.getSubnets().add(getSubnetById(vimInstance, subnetId));
+        Subnet subnet = getSubnetById(vimInstance, subnetId);
+        if (subnet != null) network.getSubnets().add(subnet);
       }
       log.info(
           "Found Network with ExtId: "
@@ -1673,7 +1676,8 @@ public class OpenstackClient extends VimDriver {
           network.setShared(jcloudsNetwork.getShared());
           network.setSubnets(new HashSet<Subnet>());
           for (String subnetId : jcloudsNetwork.getSubnets()) {
-            network.getSubnets().add(getSubnetById(vimInstance, subnetId));
+            Subnet subnet = getSubnetById(vimInstance, subnetId);
+            if (subnet != null) network.getSubnets().add(subnet);
           }
           log.debug("Found Network: " + network);
           networks.add(network);
@@ -1709,21 +1713,20 @@ public class OpenstackClient extends VimDriver {
               .buildApi(NeutronApi.class);
       SubnetApi subnetApi = neutronApi.getSubnetApi(getZone(vimInstance));
       org.jclouds.openstack.neutron.v2.domain.Subnet jcloudsSubnet = subnetApi.get(extId);
-      log.debug("Got jclouds Subnet: " + jcloudsSubnet);
-      Subnet subnet = new Subnet();
-      subnet.setExtId(jcloudsSubnet.getId());
-      subnet.setName(jcloudsSubnet.getName());
-      subnet.setCidr(jcloudsSubnet.getCidr());
-      subnet.setGatewayIp(jcloudsSubnet.getGatewayIp());
-      subnet.setNetworkId(jcloudsSubnet.getNetworkId());
-      log.info(
-          "Found Subnet with extId: "
-              + extId
-              + " on VimInstance with name: "
-              + vimInstance.getName()
-              + " -> Subnet: "
-              + subnet);
-      return subnet;
+      if (jcloudsSubnet != null) {
+        log.debug("Got jclouds Subnet: " + jcloudsSubnet);
+        Subnet subnet = new Subnet();
+        subnet.setExtId(jcloudsSubnet.getId());
+        subnet.setName(jcloudsSubnet.getName());
+        subnet.setCidr(jcloudsSubnet.getCidr());
+        subnet.setGatewayIp(jcloudsSubnet.getGatewayIp());
+        subnet.setNetworkId(jcloudsSubnet.getNetworkId());
+        log.info("Found Subnet with extId: " + extId + " on VimInstance with name: " + vimInstance.getName() + " -> Subnet: " + subnet);
+        return subnet;
+      } else {
+        log.warn("Not found subnet with id " + extId);
+        return null;
+      }
     } catch (Exception e) {
       log.error(e.getMessage(), e);
       throw new VimDriverException(e.getMessage());
