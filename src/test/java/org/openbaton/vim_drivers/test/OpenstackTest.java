@@ -71,6 +71,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.openbaton.catalogue.mano.common.DeploymentFlavour;
+import org.openbaton.catalogue.mano.descriptor.VNFDConnectionPoint;
 import org.openbaton.catalogue.mano.descriptor.VirtualDeploymentUnit;
 import org.openbaton.catalogue.mano.record.VirtualNetworkFunctionRecord;
 import org.openbaton.catalogue.nfvo.*;
@@ -1070,7 +1071,7 @@ public class OpenstackTest {
             definedServer.getImage().getExtId(),
             definedServer.getFlavor().getExtId(),
             "keypair",
-            new HashSet<String>(),
+            new HashSet<VNFDConnectionPoint>(),
             new HashSet<String>(),
             "#userdata");
     assertEqualsServers(definedServer, server);
@@ -1082,7 +1083,7 @@ public class OpenstackTest {
               faultyServer.getImage().getId(),
               faultyServer.getFlavor().getId(),
               "keypair",
-              new HashSet<String>(),
+              new HashSet<VNFDConnectionPoint>(),
               new HashSet<String>(),
               "#userdata");
     } catch (VimDriverException e) {
@@ -1096,7 +1097,7 @@ public class OpenstackTest {
               definedServer.getImage().getExtId(),
               faultyServer.getFlavor().getId(),
               "keypair",
-              new HashSet<String>(),
+              new HashSet<VNFDConnectionPoint>(),
               new HashSet<String>(),
               "#userdata");
     } catch (VimDriverException e) {
@@ -1109,7 +1110,7 @@ public class OpenstackTest {
             definedServer.getImage().getExtId(),
             "not_existing_flavor_ext_id",
             "keypair",
-            new HashSet<String>(),
+            new HashSet<VNFDConnectionPoint>(),
             new HashSet<String>(),
             "#userdata");
     try {
@@ -1120,7 +1121,7 @@ public class OpenstackTest {
               definedServer.getImage().getExtId(),
               definedServer.getFlavor().getExtId(),
               "keypair",
-              new HashSet<String>(),
+              new HashSet<VNFDConnectionPoint>(),
               new HashSet<String>(),
               "#userdata");
     } catch (VimDriverException e) {
@@ -1137,7 +1138,7 @@ public class OpenstackTest {
             definedServer.getImage().getExtId(),
             definedServer.getFlavor().getExtId(),
             "keypair",
-            new HashSet<String>(),
+            new HashSet<VNFDConnectionPoint>(),
             new HashSet<String>(),
             "#userdata");
     assertEqualsServers(definedServer, server);
@@ -1149,7 +1150,7 @@ public class OpenstackTest {
               definedServer.getImage().getExtId(),
               definedServer.getFlavor().getExtId(),
               "keypair",
-              new HashSet<String>(),
+              new HashSet<VNFDConnectionPoint>(),
               new HashSet<String>(),
               "#userdata");
     } catch (VimDriverException e) {
@@ -1163,7 +1164,7 @@ public class OpenstackTest {
               errorImage.getId(),
               errorFlavor.getId(),
               "keypair",
-              new HashSet<String>(),
+              new HashSet<VNFDConnectionPoint>(),
               new HashSet<String>(),
               "#userdata");
     } catch (VimDriverException e) {
@@ -1180,7 +1181,7 @@ public class OpenstackTest {
             definedServer.getImage().getExtId(),
             definedServer.getFlavor().getExtId(),
             "keypair",
-            new HashSet<String>(),
+            new HashSet<VNFDConnectionPoint>(),
             new HashSet<String>(),
             "#userdata");
   }

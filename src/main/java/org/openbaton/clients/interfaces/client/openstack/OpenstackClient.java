@@ -113,15 +113,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -260,10 +252,7 @@ public class OpenstackClient extends VimDriver {
               .overrides(overrides)
               .buildApi(NovaApi.class);
 
-      List<String> networkIds = new ArrayList<>();
-      for (VNFDConnectionPoint connectionPoint : network) {
-        networkIds.add(connectionPoint.getVirtual_link_reference());
-      }
+      List<String> networkIds = getNetowrkIdsFromNames(vimInstance, network);
 
       ServerApi serverApi = novaApi.getServerApi(getZone(vimInstance));
       String script = new ScriptBuilder().addStatement(exec(userData)).render(OsFamily.UNIX);
@@ -302,6 +291,38 @@ public class OpenstackClient extends VimDriver {
       log.error(e.getMessage(), e);
       throw new VimDriverException(e.getMessage());
     }
+  }
+
+  private List<String> getNetowrkIdsFromNames(
+      VimInstance vimInstance, Set<VNFDConnectionPoint> networks) throws VimDriverException {
+    List<String> res = new ArrayList<>();
+    Set<Network> networkList = vimInstance.getNetworks();
+
+    Gson gson = new Gson();
+    String oldVNFDCP = gson.toJson(networks);
+    Set<VNFDConnectionPoint> newNetworks =
+        gson.fromJson(oldVNFDCP, new TypeToken<Set<VNFDConnectionPoint>>() {}.getType());
+
+    VNFDConnectionPoint[] vnfdConnectionPoints = newNetworks.toArray(new VNFDConnectionPoint[0]);
+    Arrays.sort(
+        vnfdConnectionPoints,
+        new Comparator<VNFDConnectionPoint>() {
+          @Override
+          public int compare(VNFDConnectionPoint o1, VNFDConnectionPoint o2) {
+            return o1.getInterfaceId() - o2.getInterfaceId();
+          }
+        });
+
+    for (VNFDConnectionPoint vnfdConnectionPoint : vnfdConnectionPoints) {
+      for (Network network4j : networkList) {
+        if ((vnfdConnectionPoint.getVirtual_link_reference().equals(network4j.getName())
+            || vnfdConnectionPoint.getVirtual_link_reference().equals(network4j.getId()))) {
+          if (!res.contains(network4j.getId())) res.add(network4j.getId());
+        }
+      }
+    }
+    log.debug("result " + res);
+    return res;
   }
 
   public Server launchInstanceAndWait(
