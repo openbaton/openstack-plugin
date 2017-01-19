@@ -84,6 +84,7 @@ import org.jclouds.openstack.v2_0.options.PaginationOptions;
 import org.jclouds.scriptbuilder.ScriptBuilder;
 import org.jclouds.scriptbuilder.domain.OsFamily;
 import org.openbaton.catalogue.mano.common.DeploymentFlavour;
+import org.openbaton.catalogue.mano.descriptor.VNFDConnectionPoint;
 import org.openbaton.catalogue.nfvo.NFVImage;
 import org.openbaton.catalogue.nfvo.Network;
 import org.openbaton.catalogue.nfvo.Quota;
@@ -244,7 +245,7 @@ public class OpenstackClient extends VimDriver {
       String imageId,
       String flavorId,
       String keypair,
-      Set<String> network,
+      Set<VNFDConnectionPoint> network,
       Set<String> secGroup,
       String userData)
       throws VimDriverException {
@@ -258,12 +259,18 @@ public class OpenstackClient extends VimDriver {
               .modules(modules)
               .overrides(overrides)
               .buildApi(NovaApi.class);
+
+      List<String> networkIds = new ArrayList<>();
+      for (VNFDConnectionPoint connectionPoint : network) {
+        networkIds.add(connectionPoint.getVirtual_link_reference());
+      }
+
       ServerApi serverApi = novaApi.getServerApi(getZone(vimInstance));
       String script = new ScriptBuilder().addStatement(exec(userData)).render(OsFamily.UNIX);
       CreateServerOptions options;
       if (keypair.equals("")) {
         options =
-            CreateServerOptions.Builder.networks(network)
+            CreateServerOptions.Builder.networks(networkIds)
                 .securityGroupNames(secGroup)
                 .userData(script.getBytes());
 
@@ -271,7 +278,7 @@ public class OpenstackClient extends VimDriver {
 
         options =
             CreateServerOptions.Builder.keyPairName(keypair)
-                .networks(network)
+                .networks(networkIds)
                 .securityGroupNames(secGroup)
                 .userData(script.getBytes());
       }
@@ -286,7 +293,7 @@ public class OpenstackClient extends VimDriver {
               + ", flavorId: "
               + flavorId
               + ", networks: "
-              + network);
+              + networkIds);
       String extId = serverApi.create(name, imageId, flavorId, options).getId();
       Server server = getServerById(vimInstance, extId);
       log.debug("Created Server: " + server);
@@ -303,7 +310,7 @@ public class OpenstackClient extends VimDriver {
       String imageId,
       String flavorId,
       String keypair,
-      Set<String> network,
+      Set<VNFDConnectionPoint> network,
       Set<String> secGroup,
       String userData)
       throws VimDriverException {
@@ -318,7 +325,7 @@ public class OpenstackClient extends VimDriver {
       String imageId,
       String flavorId,
       String keypair,
-      Set<String> network,
+      Set<VNFDConnectionPoint> network,
       Set<String> secGroup,
       String userData,
       Map<String, String> floatingIp,
