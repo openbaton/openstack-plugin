@@ -328,10 +328,10 @@ public class OpenstackClient extends VimDriver {
         });
 
     for (VNFDConnectionPoint vnfdConnectionPoint : vnfdConnectionPoints) {
-      for (Network network4j : networkList) {
-        if ((vnfdConnectionPoint.getVirtual_link_reference().equals(network4j.getName())
-            || vnfdConnectionPoint.getVirtual_link_reference().equals(network4j.getId()))) {
-          if (!res.contains(network4j.getId())) res.add(network4j.getId());
+      for (Network network : networkList) {
+        if ((vnfdConnectionPoint.getVirtual_link_reference().equals(network.getName())
+            || vnfdConnectionPoint.getVirtual_link_reference().equals(network.getExtId()))) {
+          if (!res.contains(network.getExtId())) res.add(network.getExtId());
         }
       }
     }
