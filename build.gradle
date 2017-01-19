@@ -70,6 +70,7 @@ project.ext {
      */
     mainClass = 'org.openbaton.clients.interfaces.client.openstack.OpenstackClient'
     //------------------------------------------------//
+    openbatonSnapshotVersion = '3.1.1-SNAPSHOT'
     openbatonVersion = '3.0.0'
 }
 
@@ -81,15 +82,15 @@ repositories {
     mavenCentral()
     maven {
         url "https://oss.sonatype.org/content/repositories/snapshots/"
-	url "https://oss.sonatype.org/content/repositories/releases/"
+//	    url "https://oss.sonatype.org/content/repositories/releases/"
     }
 }
 dependencies {
 
-    compile 'org.openbaton:catalogue:' + openbatonVersion
-    compile 'org.openbaton:monitoring:' + openbatonVersion
-    compile 'org.openbaton:vim-drivers:' + openbatonVersion
-    compile 'org.openbaton:exception:' + openbatonVersion
+    compile 'org.openbaton:catalogue:' + openbatonSnapshotVersion
+    compile 'org.openbaton:monitoring:' + openbatonSnapshotVersion
+    compile 'org.openbaton:vim-drivers:' + openbatonSnapshotVersion
+    compile 'org.openbaton:exception:' + openbatonSnapshotVersion
     compile 'org.openbaton:plugin-sdk:' + openbatonVersion
 
 
@@ -122,4 +123,4 @@ dependencies {
 
 apply from: 'gradle/gradle/packaging.plugin-vimdriver-openstack.debian.gradle'
 
-build.dependsOn verifyGoogleJavaFormat
+compileJava.dependsOn tasks.googleJavaFormat
