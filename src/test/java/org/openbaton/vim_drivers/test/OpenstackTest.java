@@ -25,7 +25,9 @@ import com.google.common.base.Optional;
 import com.google.common.collect.*;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import org.hibernate.mapping.*;
 import org.jclouds.ContextBuilder;
+import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.collect.IterableWithMarkers;
 import org.jclouds.collect.PagedIterable;
 import org.jclouds.collect.PagedIterables;
@@ -33,6 +35,7 @@ import org.jclouds.compute.ComputeServiceContext;
 import org.jclouds.compute.Utils;
 import org.jclouds.domain.Credentials;
 import org.jclouds.io.Payload;
+import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.openstack.glance.v1_0.GlanceApi;
 import org.jclouds.openstack.glance.v1_0.domain.ContainerFormat;
 import org.jclouds.openstack.glance.v1_0.domain.DiskFormat;
@@ -59,6 +62,7 @@ import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jclouds.openstack.v2_0.domain.Link;
 import org.jclouds.openstack.v2_0.domain.PaginatedCollection;
 import org.jclouds.openstack.v2_0.domain.Resource;
+import org.jclouds.openstack.v2_0.options.PaginationOptions;
 import org.jclouds.rest.AuthorizationException;
 import org.junit.*;
 import org.junit.Rule;
@@ -86,6 +90,10 @@ import javax.naming.ldap.PagedResultsControl;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -324,8 +332,8 @@ public class OpenstackTest {
   }
 
   private class MyAddress extends Address {
-    protected MyAddress(String addr, int version) {
-      super(addr, version);
+    protected MyAddress(String addr, int version, @Nullable String macAddr, @Nullable String type) {
+      super(addr, version, macAddr, type);
     }
   }
 
@@ -381,6 +389,21 @@ public class OpenstackTest {
     }
   }
 
+  private class MyFloatingIPs extends FloatingIPs {
+
+    protected MyFloatingIPs(
+        Iterable<org.jclouds.openstack.neutron.v2.domain.FloatingIP> floatingIPs,
+        Iterable<Link> floatingIPsLinks) {
+      super(floatingIPs, floatingIPsLinks);
+    }
+  }
+
+  private class MyLink extends Link {
+    protected MyLink(Relation relation, Optional<String> type, URI href) {
+      super(relation, type, href);
+    }
+  }
+
   private class MyExternalGatewayInfo
       extends org.jclouds.openstack.neutron.v2.domain.ExternalGatewayInfo {
     protected MyExternalGatewayInfo(String networkId, Boolean enableSnat) {
@@ -403,6 +426,7 @@ public class OpenstackTest {
   private MyFloatingIP expFreeFloatingIP;
   private MyFloatingIP expUsedFloatingIP;
   private MyFloatingIP expFreeRealFloatingIP;
+  private MyFloatingIPs expFloatingIPs;
   private MyQuota expQuota;
   private MyPort expPort;
 
@@ -522,7 +546,7 @@ public class OpenstackTest {
     ServerExtendedStatus extStatus = new MyExtendedStatus("mocked_id", "mocked_name", 0);
     Map<String, Collection<Address>> addressMap = new HashMap<String, Collection<Address>>();
     Collection<Address> addresses = new HashSet<Address>();
-    addresses.add(new MyAddress("0.0.0.0", 4));
+    addresses.add(new MyAddress("0.0.0.0", 4, null, null));
     addressMap.put("mocked_private_network_name", addresses);
     Multimap<String, Address> multimap = ArrayListMultimap.create();
     for (String key : addressMap.keySet()) {
@@ -687,7 +711,7 @@ public class OpenstackTest {
             "mocked_pool");
     expFreeRealFloatingIP =
         new MyFloatingIP("mocked_ext_id", "0.0.0.0", "0.0.0.0", null, "mocked_pool");
-    Set<FloatingIP> fipSet = new HashSet<FloatingIP>();
+    final Set<FloatingIP> fipSet = new HashSet<FloatingIP>();
     fipSet.add(expFreeRealFloatingIP);
     fipSet.add(expFreeFloatingIP);
     fipSet.add(expUsedFloatingIP);
@@ -709,6 +733,19 @@ public class OpenstackTest {
             10,
             10,
             definedQuota.getKeyPairs());
+
+    final Set<Link> linkSet = new HashSet<>();
+    MyLink expLink = mock(MyLink.class);
+    linkSet.add(expLink);
+
+    org.jclouds.openstack.neutron.v2.domain.FloatingIP neutronFloatingIp =
+        mock(org.jclouds.openstack.neutron.v2.domain.FloatingIP.class);
+    when(neutronFloatingIp.getTenantId()).thenReturn("mocked_tenant_id");
+    final Set<org.jclouds.openstack.neutron.v2.domain.FloatingIP> neutronFloatingIPs =
+        new HashSet<>();
+    neutronFloatingIPs.add(neutronFloatingIp);
+
+    expFloatingIPs = new MyFloatingIPs(neutronFloatingIPs, linkSet);
 
     //jclouds APIs
     //Neutron API
@@ -970,9 +1007,17 @@ public class OpenstackTest {
 
     //FloatingIPApi
     FloatingIPApi floatingIPApi = mock(FloatingIPApi.class);
+    org.jclouds.openstack.neutron.v2.extensions.FloatingIPApi neutronFloatingIPApi =
+        mock(org.jclouds.openstack.neutron.v2.extensions.FloatingIPApi.class);
+    Optional optional = mock(Optional.class);
     when(novaApi.getFloatingIPApi(anyString())).thenReturn(mock(Optional.class));
     when(novaApi.getFloatingIPApi(anyString()).get()).thenReturn(floatingIPApi);
     when(floatingIPApi.list()).thenReturn(fipFI);
+    when(neutronApi.getFloatingIPApi(anyString())).thenReturn(optional);
+    when(neutronApi.getFloatingIPApi(anyString()).get()).thenReturn(neutronFloatingIPApi);
+    when(optional.isPresent()).thenReturn(true);
+    FloatingIPs floatingIPs = new MyFloatingIPs(neutronFloatingIPs, linkSet);
+    when(neutronFloatingIPApi.list(any(PaginationOptions.class))).thenReturn(floatingIPs);
     when(floatingIPApi.allocateFromPool(anyString())).thenReturn(expFreeFloatingIP);
 
     //QuotaApi

@@ -173,20 +173,6 @@ public class OpenstackClient extends VimDriver {
     } else {
       PluginStarter.registerPlugin(OpenstackClient.class, "openstack", "localhost", 5672, 10);
     }
-    /*OpenstackClient client = new OpenstackClient();
-    client.init();
-    VimInstance vimInstance = new VimInstance();
-    vimInstance.setUsername("openbaton");
-    vimInstance.setPassword("openbaton");
-    vimInstance.setTenant("slice-low-latency");
-    vimInstance.setAuthUrl("http://172.27.101.16:5000/v2.0");
-    vimInstance.setName("orange-box");
-
-    try {
-      System.out.println(client.listFreeFloatingIps(vimInstance));
-    } catch (VimDriverException e) {
-      e.printStackTrace();
-    }*/
   }
 
   public void init() {
@@ -376,7 +362,7 @@ public class OpenstackClient extends VimDriver {
       lock.lock();
       log.debug("Assigning FloatingIPs to VM with hostname: " + name);
       log.debug("FloatingIPs are: " + floatingIp);
-      int freeIps = listFreeFloatingIps(vimInstance).size();
+      int freeIps = listFloatingIps(vimInstance, true).size();
       int ipsNeeded = floatingIp.size();
       if (freeIps < ipsNeeded) {
         log.info(
@@ -385,7 +371,7 @@ public class OpenstackClient extends VimDriver {
         String pool_name = getIpPoolName(vimInstance);
         get_allocated(vimInstance, pool_name, ipsNeeded - freeIps);
       }
-      if (listFreeFloatingIps(vimInstance).size() >= floatingIp.size()) {
+      if (listFloatingIps(vimInstance, true).size() >= floatingIp.size()) {
         for (Map.Entry<String, String> fip : floatingIp.entrySet()) {
           associateFloatingIpToNetwork(vimInstance, server, fip);
           log.info(
@@ -552,6 +538,7 @@ public class OpenstackClient extends VimDriver {
               .buildApi(NovaApi.class);
       ServerApi serverApi = novaApi.getServerApi(getZone(vimInstance));
       String tenantId = getTenantId(vimInstance);
+      List<String> allFloatingIps = listFloatingIps(vimInstance, false);
       for (org.jclouds.openstack.nova.v2_0.domain.Server jcloudsServer :
           serverApi.listInDetail().concat()) {
         if (jcloudsServer.getTenantId().equals(tenantId)) {
@@ -566,16 +553,23 @@ public class OpenstackClient extends VimDriver {
             server.setHypervisorHostName(
                 jcloudsServer.getExtendedAttributes().get().getHypervisorHostName());
           }
-          HashMap<String, List<String>> ipMap = new HashMap<String, List<String>>();
+          HashMap<String, List<String>> privateIpMap = new HashMap<String, List<String>>();
+          HashMap<String, String> floatingIpMap = new HashMap<>();
+          log.info(jcloudsServer.getAddresses().toString());
           for (String key : jcloudsServer.getAddresses().keys()) {
             List<String> ips = new ArrayList<String>();
             for (Address address : jcloudsServer.getAddresses().get(key)) {
-              ips.add(address.getAddr());
+              String ip = address.getAddr();
+              if (allFloatingIps.contains(ip)) {
+                floatingIpMap.put(key, ip);
+              } else {
+                ips.add(ip);
+              }
             }
-            ipMap.put(key, ips);
+            privateIpMap.put(key, ips);
           }
-          server.setIps(ipMap);
-          server.setFloatingIps(new HashMap<String, String>());
+          server.setIps(privateIpMap);
+          server.setFloatingIps(floatingIpMap);
           server.setCreated(jcloudsServer.getCreated());
           server.setUpdated(jcloudsServer.getUpdated());
           Resource image = jcloudsServer.getImage();
@@ -608,6 +602,8 @@ public class OpenstackClient extends VimDriver {
 
   private Server getServerById(VimInstance vimInstance, String extId) throws VimDriverException {
     log.debug("Finding VM by ID: " + extId + " on VimInstance with name: " + vimInstance.getName());
+    List<String> allFloatingIps = listFloatingIps(vimInstance, false);
+
     try {
       NovaApi novaApi =
           ContextBuilder.newBuilder("openstack-nova")
@@ -632,18 +628,24 @@ public class OpenstackClient extends VimDriver {
       server.setName(jcloudsServer.getName());
       server.setStatus(jcloudsServer.getStatus().value());
       server.setExtendedStatus(jcloudsServer.getExtendedStatus().toString());
-      HashMap<String, List<String>> ipMap = new HashMap<>();
+      HashMap<String, List<String>> privateIpMap = new HashMap<>();
+      HashMap<String, String> floatingIpMap = new HashMap<>();
 
       for (String key : jcloudsServer.getAddresses().keys()) {
-        List<String> ips = new ArrayList<>();
+        List<String> ips = new ArrayList<String>();
         for (Address address : jcloudsServer.getAddresses().get(key)) {
-          ips.add(address.getAddr());
+          String ip = address.getAddr();
+          if (allFloatingIps.contains(ip)) {
+            floatingIpMap.put(key, ip);
+          } else {
+            ips.add(ip);
+          }
         }
-        ipMap.put(key, ips);
+        privateIpMap.put(key, ips);
       }
 
-      server.setIps(ipMap);
-      server.setFloatingIps(new HashMap<String, String>());
+      server.setIps(privateIpMap);
+      server.setFloatingIps(floatingIpMap);
       server.setCreated(jcloudsServer.getCreated());
       server.setUpdated(jcloudsServer.getUpdated());
       Resource image = jcloudsServer.getImage();
@@ -1425,7 +1427,8 @@ public class OpenstackClient extends VimDriver {
     network.setSubnets(new HashSet<Subnet>());
     for (String subnetId : jcloudsNetwork.getSubnets()) {
       try {
-        network.getSubnets().add(getSubnetById(vimInstance, subnetId));
+        Subnet subnet = getSubnetById(vimInstance, subnetId);
+        if (subnet != null) network.getSubnets().add(subnet);
       } catch (Exception e) {
         log.warn("Not able to find subnets. Not able to find subnet with id" + subnetId);
       }
@@ -1488,7 +1491,8 @@ public class OpenstackClient extends VimDriver {
       network.setShared(jcloudsNetwork.getShared());
       network.setSubnets(new HashSet<Subnet>());
       for (String subnetId : jcloudsNetwork.getSubnets()) {
-        network.getSubnets().add(getSubnetById(vimInstance, subnetId));
+        Subnet subnet = getSubnetById(vimInstance, subnetId);
+        if (subnet != null) network.getSubnets().add(subnet);
       }
       log.debug(
           "Updated Network with name: "
@@ -1569,7 +1573,8 @@ public class OpenstackClient extends VimDriver {
       network.setShared(jcloudsNetwork.getShared());
       network.setSubnets(new HashSet<Subnet>());
       for (String subnetId : jcloudsNetwork.getSubnets()) {
-        network.getSubnets().add(getSubnetById(vimInstance, subnetId));
+        Subnet subnet = getSubnetById(vimInstance, subnetId);
+        if (subnet != null) network.getSubnets().add(subnet);
       }
       log.info(
           "Found Network with ExtId: "
@@ -1671,7 +1676,8 @@ public class OpenstackClient extends VimDriver {
           network.setShared(jcloudsNetwork.getShared());
           network.setSubnets(new HashSet<Subnet>());
           for (String subnetId : jcloudsNetwork.getSubnets()) {
-            network.getSubnets().add(getSubnetById(vimInstance, subnetId));
+            Subnet subnet = getSubnetById(vimInstance, subnetId);
+            if (subnet != null) network.getSubnets().add(subnet);
           }
           log.debug("Found Network: " + network);
           networks.add(network);
@@ -1707,21 +1713,26 @@ public class OpenstackClient extends VimDriver {
               .buildApi(NeutronApi.class);
       SubnetApi subnetApi = neutronApi.getSubnetApi(getZone(vimInstance));
       org.jclouds.openstack.neutron.v2.domain.Subnet jcloudsSubnet = subnetApi.get(extId);
-      log.debug("Got jclouds Subnet: " + jcloudsSubnet);
-      Subnet subnet = new Subnet();
-      subnet.setExtId(jcloudsSubnet.getId());
-      subnet.setName(jcloudsSubnet.getName());
-      subnet.setCidr(jcloudsSubnet.getCidr());
-      subnet.setGatewayIp(jcloudsSubnet.getGatewayIp());
-      subnet.setNetworkId(jcloudsSubnet.getNetworkId());
-      log.info(
-          "Found Subnet with extId: "
-              + extId
-              + " on VimInstance with name: "
-              + vimInstance.getName()
-              + " -> Subnet: "
-              + subnet);
-      return subnet;
+      if (jcloudsSubnet != null) {
+        log.debug("Got jclouds Subnet: " + jcloudsSubnet);
+        Subnet subnet = new Subnet();
+        subnet.setExtId(jcloudsSubnet.getId());
+        subnet.setName(jcloudsSubnet.getName());
+        subnet.setCidr(jcloudsSubnet.getCidr());
+        subnet.setGatewayIp(jcloudsSubnet.getGatewayIp());
+        subnet.setNetworkId(jcloudsSubnet.getNetworkId());
+        log.info(
+            "Found Subnet with extId: "
+                + extId
+                + " on VimInstance with name: "
+                + vimInstance.getName()
+                + " -> Subnet: "
+                + subnet);
+        return subnet;
+      } else {
+        log.warn("Not found subnet with id " + extId);
+        return null;
+      }
     } catch (Exception e) {
       log.error(e.getMessage(), e);
       throw new VimDriverException(e.getMessage());
@@ -2071,19 +2082,15 @@ public class OpenstackClient extends VimDriver {
     }
   }
 
-  private List<String> listFreeFloatingIps(VimInstance vimInstance) throws VimDriverException {
-    log.debug("Listing all free FloatingIPs of VimInstance with name: " + vimInstance.getName());
+  private List<String> listFloatingIps(VimInstance vimInstance, boolean listFreeOnly)
+      throws VimDriverException {
+    if (listFreeOnly == true) {
+      log.debug("Listing all free FloatingIPs of VimInstance with name: " + vimInstance.getName());
+    } else {
+      log.debug("Listing all FloatingIPs of VimInstance with name: " + vimInstance.getName());
+    }
     String tenantId = getTenantId(vimInstance);
     try {
-      NovaApi novaApi =
-          ContextBuilder.newBuilder("openstack-nova")
-              .endpoint(vimInstance.getAuthUrl())
-              .credentials(
-                  vimInstance.getTenant() + ":" + vimInstance.getUsername(),
-                  vimInstance.getPassword())
-              .modules(modules)
-              .overrides(overrides)
-              .buildApi(NovaApi.class);
       NeutronApi neutronApi =
           ContextBuilder.newBuilder("openstack-neutron")
               .endpoint(vimInstance.getAuthUrl())
@@ -2111,15 +2118,29 @@ public class OpenstackClient extends VimDriver {
         List<String> floatingIPs = new LinkedList<String>();
 
         for (FloatingIP floatingIP : floatingIPApi.list(new PaginationOptions())) {
-          if (floatingIP.getTenantId().equals(tenantId) && floatingIP.getFixedIpAddress() == null) {
-            floatingIPs.add(floatingIP.getFloatingIpAddress() /*getFloatingIpAddress()*/);
+          if (floatingIP.getTenantId().equals(tenantId)) {
+            if (listFreeOnly == true) {
+              if (floatingIP.getFixedIpAddress() == null) {
+                floatingIPs.add(floatingIP.getFloatingIpAddress() /*getFloatingIpAddress()*/);
+              }
+            } else {
+              floatingIPs.add(floatingIP.getFloatingIpAddress() /*getFloatingIpAddress()*/);
+            }
           }
         }
-        log.info(
-            "Listed all free FloatingIPs of VimInstance with name: "
-                + vimInstance.getName()
-                + " -> free FloatingIPs: "
-                + floatingIPs);
+        if (listFreeOnly == true) {
+          log.info(
+              "Listed all free FloatingIPs of VimInstance with name: "
+                  + vimInstance.getName()
+                  + " -> free FloatingIPs: "
+                  + floatingIPs);
+        } else {
+          log.info(
+              "Listed all FloatingIPs of VimInstance with name: "
+                  + vimInstance.getName()
+                  + " -> FloatingIPs: "
+                  + floatingIPs);
+        }
         return floatingIPs;
       } else {
         /*
@@ -2193,20 +2214,27 @@ public class OpenstackClient extends VimDriver {
             log.debug("FloatingIp is: " + element.getAsJsonObject());
             JsonElement fixed_ip_address = element.getAsJsonObject().get("fixed_ip_address");
             JsonElement tenant_id = element.getAsJsonObject().get("tenant_id");
-            if (!fixed_ip_address.isJsonNull() || !tenant_id.getAsString().equals(tenantId)) {
-              //              log.debug("FixedIpAddress is: " + fixed_ip_address);
-              continue;
+            if (tenant_id.getAsString().equals(tenantId)) {
+              String floating_ip_address =
+                  element.getAsJsonObject().get("floating_ip_address").getAsString();
+              log.debug("found ip: " + floating_ip_address);
+              if (listFreeOnly == true) {
+                if (fixed_ip_address.isJsonNull()) {
+                  result.add(floating_ip_address);
+                }
+              } else {
+                result.add(floating_ip_address);
+              }
             }
-
-            String floating_ip_address =
-                element.getAsJsonObject().get("floating_ip_address").getAsString();
-            log.debug("found ip: " + floating_ip_address);
-            result.add(floating_ip_address);
           }
         } else {
           log.warn("Was not possible through Openstack ReST api to retrieve all the FloatingIP");
         }
-        log.info("Free Floating ips are: " + result);
+        if (listFreeOnly == true) {
+          log.info("Free Floating ips are: " + result);
+        } else {
+          log.info("Floating ips are: " + result);
+        }
         return result;
       }
     } catch (Exception e) {
@@ -2406,7 +2434,7 @@ public class OpenstackClient extends VimDriver {
                     + " . wrong network"
                     + fip.getKey());
           } else {
-            floatingIp = listFreeFloatingIps(vimInstance).get(0);
+            floatingIp = listFloatingIps(vimInstance, true).get(0);
             log.debug("Got Floating ip" + floatingIp.toString());
           }
         } else if (validate(fip.getValue())) {
