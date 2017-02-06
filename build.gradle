@@ -70,8 +70,9 @@ project.ext {
      */
     mainClass = 'org.openbaton.clients.interfaces.client.openstack.OpenstackClient'
     //------------------------------------------------//
-    openbatonSnapshotVersion = '3.1.1-SNAPSHOT'
-    openbatonVersion = '3.0.0'
+
+    openbatonSnapshotVersion = '3.2.0-SNAPSHOT'
+    openbatonVersion = '3.2.0'
 }
 
 apply from: 'gradle/gradle/application.java.gradle'
@@ -82,30 +83,30 @@ repositories {
     mavenCentral()
     maven {
         url "https://oss.sonatype.org/content/repositories/snapshots/"
-//	    url "https://oss.sonatype.org/content/repositories/releases/"
+        url "https://oss.sonatype.org/content/repositories/releases/"
     }
 }
 dependencies {
 
-    compile 'org.openbaton:catalogue:' + openbatonSnapshotVersion
-    compile 'org.openbaton:monitoring:' + openbatonSnapshotVersion
-    compile 'org.openbaton:vim-drivers:' + openbatonSnapshotVersion
-    compile 'org.openbaton:exception:' + openbatonSnapshotVersion
+    compile 'org.openbaton:catalogue:' + openbatonVersion
+    compile 'org.openbaton:monitoring:' + openbatonVersion
+    compile 'org.openbaton:vim-drivers:' + openbatonVersion
+    compile 'org.openbaton:exception:' + openbatonVersion
     compile 'org.openbaton:plugin-sdk:' + openbatonVersion
 
 
     compile 'org.hibernate:hibernate-core:4.3.10.Final'
 
-    compile ('org.apache.jclouds.driver:jclouds-slf4j:1.9.2')
-    compile ('org.apache.jclouds.driver:jclouds-sshj:1.9.2')
-    compile ('org.apache.jclouds.api:openstack-keystone:1.9.2')
-    compile ('org.apache.jclouds.api:openstack-nova:1.9.2')
-    compile ('org.apache.jclouds.api:openstack-swift:1.9.2')
-    compile ('org.apache.jclouds.api:openstack-cinder:1.9.2')
-    compile ('org.apache.jclouds.api:openstack-trove:1.9.2')
-    compile ('org.apache.jclouds.labs:openstack-glance:1.9.2')
-    compile ('org.apache.jclouds.labs:openstack-neutron:1.9.2')
-    compile ('org.apache.jclouds.labs:openstack-marconi:1.9.2')
+    compile ('org.apache.jclouds.driver:jclouds-slf4j:2.0.0')
+    compile ('org.apache.jclouds.driver:jclouds-sshj:2.0.0')
+    compile ('org.apache.jclouds.api:openstack-keystone:2.0.0')
+    compile ('org.apache.jclouds.api:openstack-nova:2.0.0')
+    compile ('org.apache.jclouds.api:openstack-swift:2.0.0')
+    compile ('org.apache.jclouds.api:openstack-cinder:2.0.0')
+    compile ('org.apache.jclouds.api:openstack-trove:2.0.0')
+    compile ('org.apache.jclouds.labs:openstack-glance:2.0.0')
+    compile ('org.apache.jclouds.labs:openstack-neutron:2.0.0')
+    compile ('org.apache.jclouds.labs:openstack-marconi:2.0.0')
 
     // https://mvnrepository.com/artifact/commons-net/commons-net
     compile group: 'commons-net', name: 'commons-net', version: '3.5'
@@ -122,5 +123,6 @@ dependencies {
 
 
 apply from: 'gradle/gradle/packaging.plugin-vimdriver-openstack.debian.gradle'
+
 
 compileJava.dependsOn tasks.googleJavaFormat
