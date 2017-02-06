@@ -147,16 +147,7 @@ public class OpenstackClient extends VimDriver {
       throws NoSuchMethodException, IOException, InstantiationException, TimeoutException,
           IllegalAccessException, InvocationTargetException {
     OpenstackClient.lock = new ReentrantLock();
-    if (args.length == 6) {
-      PluginStarter.registerPlugin(
-          OpenstackClient.class,
-          args[0],
-          args[1],
-          Integer.parseInt(args[2]),
-          Integer.parseInt(args[3]),
-          args[4],
-          args[5]);
-    } else if (args.length == 4) {
+    if (args.length == 4) {
       PluginStarter.registerPlugin(
           OpenstackClient.class,
           args[0],
