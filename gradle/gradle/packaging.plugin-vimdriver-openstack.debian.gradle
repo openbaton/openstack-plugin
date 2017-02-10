@@ -18,15 +18,15 @@ ext {
     debianApplicationVersionFull = "${applicationVersionFull}".replaceAll("-", ".")
 
     baseName = 'openbaton'
-    componentName = "plugin-vimdriver-openstack"
+    componentName = "plugin-vimdriver-openstack-jclouds"
     fullName = "${baseName}-${componentName}"
     propertiesDir = '/etc/openbaton'
     baseBinaryDir = '/usr/lib/openbaton'
     jarSubpathName = "plugins/vim-drivers"
 }
 
-task makedeb(type: Deb, dependsOn: [jar, build]) { 
-    packageName = (applicationRelease) ? "${fullName}" : "${fullName}-nightly"
+task makeDeb(type: Deb, dependsOn: [jar, build]) {
+    packageName = (applicationRelease) ? "${fullName}-${version}" : "${fullName}-${version}-nightly"
     version = debianApplicationVersionFull
     //release = 1 
     priority = 'optional'
@@ -46,3 +46,20 @@ task makedeb(type: Deb, dependsOn: [jar, build]) {
         rename("(.*)","${fullName}-${version}.jar")
     }
 }
+
+task makeMetaDeb(type: Deb) {
+    packageName = (applicationRelease) ? "${fullName}" : "${fullName}-nightly"
+    version = debianApplicationVersionFull
+    //release = 1
+    priority = 'optional'
+    arch = 'all'
+    maintainer = 'Open Baton Team <dev@openbaton.org>'
+    vendor = 'Open Source (Implemented by Fraunhofer FOKUS and TUB)'
+    license = 'Apache 2.0 License'
+    url = 'http://openbaton.github.io/index.html'
+    summary = 'OpenStack Virtualized Infrastructure Manager (VIM) Driver Plugin for the Open Baton Project (metapackage depending on the latest version)'
+    packageDescription = 'The OpenStack VIM Driver Plugin is a component of the Open Baton projetc, which is an ETSI compliant implementation of a NFV Management and Orchestration (MANO). It allows, using the Open Baton system, to deploy services on an OpenStack-based Network Function Virtualization Infrastructure (NFVI) instance'
+
+    requires("${fullName}-${version}")
+}
+
