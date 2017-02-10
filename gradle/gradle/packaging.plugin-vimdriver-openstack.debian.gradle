@@ -22,7 +22,7 @@ ext {
     fullName = "${baseName}-${componentName}"
     propertiesDir = '/etc/openbaton'
     baseBinaryDir = '/usr/lib/openbaton'
-    jarSubpathName = "plugins".replaceAll("-", "/")
+    jarSubpathName = "plugins/vim-drivers"
 }
 
 task makedeb(type: Deb, dependsOn: [jar, build]) { 
