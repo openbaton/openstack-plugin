@@ -16,3 +16,5 @@
  *
  *
  */
+
+rootProject.name = "openbaton-plugin-vimdriver-openstack-jclouds"
