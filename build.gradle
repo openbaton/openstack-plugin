@@ -71,7 +71,7 @@ project.ext {
     mainClass = 'org.openbaton.clients.interfaces.client.openstack.OpenstackClient'
     //------------------------------------------------//
 
-    openbatonVersion = '3.2.1-SNAPSHOT'
+    openbatonVersion = '3.2.1'
 }
 
 apply from: 'gradle/gradle/application.java.gradle'
