@@ -4,6 +4,13 @@
 
 # OpenBaton Openstack Driver
 
+```diff
+- deprecated due to incompabilities between gson versions of Open Baton and jClouds (library in use)
+- https://issues.apache.org/jira/browse/JCLOUDS-1160
+- https://issues.apache.org/jira/browse/JCLOUDS-1166
+- still works Open Baton version < 3.2.0
+```
+
 OpenBaton is an open source project providing a reference implementation of the NFVO and VNFM based on the [ETSI][NFV MANO] specification, is implemented in java using the [spring.io] framework. It consists of two main components: a NFVO and a generic VNFM. This project **openstack-plugin** contains an implementation of a plugin for OpenBaton system. This plugin is implemented with the help of plugin-sdk developed for the NFVO which allows NFVO to send requests to the plugin via AMQP server and allocate resources on Openstack. The default way of communication between the plugin and openstack is rabbitmq server. The plugin uses Apache Jclouds API and REST to communicate with Openstack. It is most widely used and tested with the Openstack-Kilo version to date. This is recommended and default Openstack distribution. However, if you want to use it with Openstack-Liberty, you can find the Liberty version of the plugin at [get.openbaton.org][get-openbaton-org-liberty] or in a specific branch of this project. Be aware, however, that liberty version uses the snapshot(not yet released) version of the jclouds API. 
 
 ## How to install Openstack Driver
